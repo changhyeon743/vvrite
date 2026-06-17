@@ -7,7 +7,7 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from PyInstaller.utils.hooks import collect_submodules
-from vvrite import APP_BUNDLE_IDENTIFIER
+from vvrite import APP_BUNDLE_IDENTIFIER, __version__
 
 block_cipher = None
 
@@ -19,8 +19,8 @@ SPARKLE_PUBLIC_ED_KEY = os.environ.get("SPARKLE_PUBLIC_ED_KEY", "").strip()
 
 info_plist = {
     "CFBundleName": "vvrite",
-    "CFBundleShortVersionString": "1.0.6",  # keep in sync with vvrite/__init__.__version__
-    "CFBundleVersion": "6",
+    "CFBundleShortVersionString": __version__,  # sourced from vvrite/__init__.__version__
+    "CFBundleVersion": "7",  # monotonic build number; bump each release
     "LSUIElement": True,
     "NSMicrophoneUsageDescription": (
         "vvrite needs microphone access to record and transcribe your speech."

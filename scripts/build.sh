@@ -19,7 +19,7 @@ SPARKLE_KEY_ACCOUNT="${SPARKLE_KEY_ACCOUNT:-vvrite-shaircast}"
 # `vendor/Sparkle/bin/generate_keys --account vvrite-shaircast -p`). Defaulted
 # here so release builds work without exporting it each time; update this if the
 # signing key is ever rotated.
-SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-nOeh/Q16IsXOKE7vczErR7PTe87iwBSZu3AZ0GXw6A4=}"
+export SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-nOeh/Q16IsXOKE7vczErR7PTe87iwBSZu3AZ0GXw6A4=}"
 
 # ── Step 0: Preflight ───────────────────────────────────────────
 echo "▸ Checking build environment..."
@@ -230,13 +230,13 @@ PY
     if [[ -n "${SPARKLE_PRIVATE_ED_KEY:-}" ]]; then
         echo "$SPARKLE_PRIVATE_ED_KEY" | \
             "$SPARKLE_VENDOR_DIR/bin/generate_appcast" \
-                "${APPCAST_ARGS[@]}" --ed-key-file - "$UPDATE_DIR"
+                ${APPCAST_ARGS[@]+"${APPCAST_ARGS[@]}"} --ed-key-file - "$UPDATE_DIR"
     elif [[ -n "${SPARKLE_ED_KEY_FILE:-}" ]]; then
         "$SPARKLE_VENDOR_DIR/bin/generate_appcast" \
-            "${APPCAST_ARGS[@]}" --ed-key-file "$SPARKLE_ED_KEY_FILE" "$UPDATE_DIR"
+            ${APPCAST_ARGS[@]+"${APPCAST_ARGS[@]}"} --ed-key-file "$SPARKLE_ED_KEY_FILE" "$UPDATE_DIR"
     else
         "$SPARKLE_VENDOR_DIR/bin/generate_appcast" \
-            "${APPCAST_ARGS[@]}" --account "$SPARKLE_KEY_ACCOUNT" "$UPDATE_DIR"
+            ${APPCAST_ARGS[@]+"${APPCAST_ARGS[@]}"} --account "$SPARKLE_KEY_ACCOUNT" "$UPDATE_DIR"
     fi
 
     echo "  ✓ Appcast ready: $UPDATE_DIR/appcast.xml"
