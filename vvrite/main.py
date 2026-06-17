@@ -3,6 +3,7 @@
 import os
 import sys
 import threading
+import time
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -41,6 +42,11 @@ class AppDelegate(NSObject):
         self._recorder = Recorder()
         self._recording = False
         self._lock = threading.Lock()
+        # Push-to-talk: monotonic timestamp of the current hold's start, and the
+        # minimum hold duration that counts as a real recording (shorter holds
+        # are treated as accidental taps and discarded).
+        self._ptt_start_ts = 0.0
+        self._PTT_MIN_HOLD = 0.15
         self._overlay = None
         self._status_bar = None
         self._hotkey = None
@@ -194,6 +200,39 @@ class AppDelegate(NSObject):
             else:
                 self._stop_recording()
 
+    def startRecordingPTT(self):
+        """Push-to-talk key pressed: begin recording (idempotent under repeats)."""
+        with self._lock:
+            if not self._recording:
+                self._ptt_start_ts = time.monotonic()
+                self._start_recording()
+
+    def stopRecordingPTT(self):
+        """Push-to-talk key released: stop and transcribe, or discard a quick tap."""
+        with self._lock:
+            if not self._recording:
+                return
+            too_short = (time.monotonic() - self._ptt_start_ts) < self._PTT_MIN_HOLD
+            if not too_short:
+                self._stop_recording()
+                return
+            # Accidental tap: discard the recording instead of transcribing silence.
+            self._recording = False
+
+        try:
+            raw_path = self._recorder.stop()
+            if raw_path:
+                try:
+                    os.unlink(raw_path)
+                except OSError:
+                    pass
+        except RuntimeError:
+            pass
+
+        self.performSelectorOnMainThread_withObject_waitUntilDone_(
+            "dismissAndResetUI:", None, False
+        )
+
     def _start_recording(self):
         self._recording = True
         sounds.play(self._prefs.sound_start, self._prefs.start_volume)
@@ -343,8 +382,14 @@ class AppDelegate(NSObject):
         """Return Sparkle's automatic-check setting if Sparkle is available."""
         return self._updater.automatically_checks_for_updates()
 
+    @objc.python_method
     def setAutoUpdateCheckEnabled(self, enabled: bool):
-        """Persist automatic-check setting through Sparkle, with source fallback."""
+        """Persist automatic-check setting through Sparkle, with source fallback.
+
+        Marked python_method: it is only ever called from Python (settings.py),
+        and its name would otherwise map to a zero-argument ObjC selector, which
+        strict PyObjC (>=12) rejects as an arity mismatch.
+        """
         if not self._updater.set_automatically_checks_for_updates(enabled):
             self._prefs.auto_update_check = enabled
 

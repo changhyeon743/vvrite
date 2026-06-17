@@ -7,6 +7,9 @@ from vvrite.preferences import APP_DEFAULTS_DOMAIN
 _TEST_KEYS = [
     "hotkey_keycode",
     "hotkey_modifiers",
+    "recording_mode",
+    "ptt_hotkey_keycode",
+    "ptt_hotkey_modifiers",
     "retract_last_dictation_enabled",
     "retract_hotkey_keycode",
     "retract_hotkey_modifiers",
@@ -76,6 +79,39 @@ class TestPreferences(unittest.TestCase):
             prefs.retract_hotkey_modifiers,
             int(kCGEventFlagMaskAlternate | kCGEventFlagMaskShift),
         )
+
+    def test_default_recording_mode_is_toggle(self):
+        from vvrite.preferences import Preferences
+        prefs = Preferences()
+        self.assertEqual(prefs.recording_mode, "toggle")
+
+    def test_set_recording_mode(self):
+        from vvrite.preferences import Preferences
+        prefs = Preferences()
+        prefs.recording_mode = "hold"
+        self.assertEqual(prefs.recording_mode, "hold")
+        prefs.recording_mode = "toggle"
+        self.assertEqual(prefs.recording_mode, "toggle")
+
+    def test_default_ptt_hotkey(self):
+        from vvrite.preferences import Preferences
+        prefs = Preferences()
+        self.assertEqual(prefs.ptt_hotkey_keycode, 0x36)  # Right Command
+        self.assertEqual(prefs.ptt_hotkey_modifiers, 0)
+
+    def test_set_ptt_hotkey(self):
+        from vvrite.preferences import Preferences
+        prefs = Preferences()
+        prefs.ptt_hotkey_keycode = 0x3D  # Right Option
+        prefs.ptt_hotkey_modifiers = 0
+        self.assertEqual(prefs.ptt_hotkey_keycode, 0x3D)
+        self.assertEqual(prefs.ptt_hotkey_modifiers, 0)
+
+    def test_recording_mode_persists_across_instances(self):
+        from vvrite.preferences import Preferences
+        prefs = Preferences()
+        prefs.recording_mode = "hold"
+        self.assertEqual(Preferences().recording_mode, "hold")
 
     def test_default_max_tokens(self):
         from vvrite.preferences import Preferences

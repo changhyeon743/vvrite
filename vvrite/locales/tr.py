@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Kısayol",
         },
+        "tabs": {
+            "general": "Genel",
+            "audio": "Ses",
+            "language": "Dil",
+            "system": "Sistem",
+        },
+        "recording": {
+            "title": "Kayıt Modu",
+            "mode": "Mod",
+            "toggle": "Aç/Kapat",
+            "push_to_talk": "Bas-konuş",
+            "toggle_shortcut": "Kısayol",
+            "ptt_shortcut": "Bas-konuş tuşu",
+            "toggle_hint": "Başlatmak için bir kez basın, durdurmak için tekrar basın.",
+            "ptt_hint": "Kaydetmek için tuşu basılı tutun, yazıya dökmek için bırakın.",
+        },
+        "startup": {
+            "title": "Başlangıç ve Güncellemeler",
+        },
         "correction": {
             "title": "Düzeltme",
             "enable": "Son dikteyi geri alma kısayolunu etkinleştir",

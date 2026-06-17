@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Atalho",
         },
+        "tabs": {
+            "general": "Geral",
+            "audio": "Áudio",
+            "language": "Idioma",
+            "system": "Sistema",
+        },
+        "recording": {
+            "title": "Modo de gravação",
+            "mode": "Modo",
+            "toggle": "Alternar",
+            "push_to_talk": "Pressionar para falar",
+            "toggle_shortcut": "Atalho",
+            "ptt_shortcut": "Tecla de pressionar para falar",
+            "toggle_hint": "Pressione uma vez para iniciar, pressione novamente para parar.",
+            "ptt_hint": "Mantenha a tecla pressionada para gravar e solte para transcrever.",
+        },
+        "startup": {
+            "title": "Inicialização e atualizações",
+        },
         "correction": {
             "title": "Correção",
             "enable": "Ativar atalho para retroceder último ditado",

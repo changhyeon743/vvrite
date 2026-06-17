@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Shortcut",
         },
+        "tabs": {
+            "general": "General",
+            "audio": "Audio",
+            "language": "Language",
+            "system": "System",
+        },
+        "recording": {
+            "title": "Recording Mode",
+            "mode": "Mode",
+            "toggle": "Toggle",
+            "push_to_talk": "Push-to-talk",
+            "toggle_shortcut": "Shortcut",
+            "ptt_shortcut": "Push-to-talk key",
+            "toggle_hint": "Press once to start, press again to stop.",
+            "ptt_hint": "Hold the key to record, release to transcribe.",
+        },
+        "startup": {
+            "title": "Startup & Updates",
+        },
         "correction": {
             "title": "Correction",
             "enable": "Enable retract last dictation shortcut",

@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Atajo",
         },
+        "tabs": {
+            "general": "General",
+            "audio": "Audio",
+            "language": "Idioma",
+            "system": "Sistema",
+        },
+        "recording": {
+            "title": "Modo de grabación",
+            "mode": "Modo",
+            "toggle": "Alternar",
+            "push_to_talk": "Pulsar para hablar",
+            "toggle_shortcut": "Atajo",
+            "ptt_shortcut": "Tecla de pulsar para hablar",
+            "toggle_hint": "Presiona una vez para iniciar y de nuevo para detener.",
+            "ptt_hint": "Mantén pulsada la tecla para grabar y suéltala para transcribir.",
+        },
+        "startup": {
+            "title": "Inicio y actualizaciones",
+        },
         "correction": {
             "title": "Corrección",
             "enable": "Activar atajo para retractar último dictado",

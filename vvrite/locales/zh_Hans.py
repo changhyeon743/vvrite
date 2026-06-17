@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "快捷键",
         },
+        "tabs": {
+            "general": "通用",
+            "audio": "音频",
+            "language": "语言",
+            "system": "系统",
+        },
+        "recording": {
+            "title": "录音模式",
+            "mode": "模式",
+            "toggle": "切换",
+            "push_to_talk": "按住说话",
+            "toggle_shortcut": "快捷键",
+            "ptt_shortcut": "按住说话按键",
+            "toggle_hint": "按一次开始录音，再按一次停止。",
+            "ptt_hint": "按住按键进行录音，松开后转录。",
+        },
+        "startup": {
+            "title": "启动与更新",
+        },
         "correction": {
             "title": "更正",
             "enable": "启用撤回上次听写快捷键",

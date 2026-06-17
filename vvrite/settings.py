@@ -25,6 +25,18 @@ from AppKit import (
     NSSlider,
     NSOpenPanel,
     NSMenuItem,
+    NSToolbar,
+    NSToolbarItem,
+    NSTabView,
+    NSTabViewItem,
+    NSNoTabsNoBorder,
+    NSToolbarDisplayModeIconAndLabel,
+    NSWindowToolbarStylePreference,
+    NSSegmentedControl,
+    NSImage,
+    NSBox,
+    NSBoxSeparator,
+    NSView,
 )
 from Foundation import NSLog, NSURL, NSTimer
 
@@ -35,7 +47,29 @@ from vvrite.audio_devices import (
     resolve_input_device,
 )
 from vvrite.locales import t, SUPPORTED_LANGUAGES
-from vvrite.widgets import ShortcutField, format_shortcut
+from vvrite.widgets import ShortcutField, format_shortcut, active_shortcut
+
+
+# Layout constants for the tabbed settings window.
+WIN_W = 480
+CONTENT_H = 300
+MARGIN = 24
+LABEL_W = 120
+CTRL_X = MARGIN + LABEL_W + 12  # 156
+RIGHT = WIN_W - MARGIN          # 456
+CTRL_W = RIGHT - CTRL_X         # 300
+
+_TAB_GENERAL = "general"
+_TAB_AUDIO = "audio"
+_TAB_LANGUAGE = "language"
+_TAB_SYSTEM = "system"
+_TAB_IDS = [_TAB_GENERAL, _TAB_AUDIO, _TAB_LANGUAGE, _TAB_SYSTEM]
+_TAB_ICONS = {
+    _TAB_GENERAL: "gearshape",
+    _TAB_AUDIO: "mic",
+    _TAB_LANGUAGE: "globe",
+    _TAB_SYSTEM: "lock.shield",
+}
 
 
 class SettingsWindowController(NSObject):
@@ -45,10 +79,15 @@ class SettingsWindowController(NSObject):
             return None
         self._prefs = prefs
         self._window = None
+        self._tab_view = None
         self._permission_timer = None
         self._acc_label = None
         self._mic_label = None
+        self._mode_segmented = None
+        self._mode_hotkey_label = None
+        self._mode_hint = None
         self._shortcut_field = None
+        self._ptt_shortcut_field = None
         self._retract_checkbox = None
         self._retract_shortcut_field = None
         self._retract_change_btn = None
@@ -68,43 +107,276 @@ class SettingsWindowController(NSObject):
         return self
 
     def _build_window(self):
-        frame = NSMakeRect(0, 0, 400, 806)
         self._window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
-            frame,
+            NSMakeRect(0, 0, WIN_W, CONTENT_H),
             NSWindowStyleMaskTitled | NSWindowStyleMaskClosable,
             NSBackingStoreBuffered,
             False,
         )
         self._window.setTitle_(t("settings.title"))
         self._window.setReleasedWhenClosed_(False)
-        self._window.center()
         self._window.setDelegate_(self)
 
-        content = self._window.contentView()
-        y = 792
+        # A borderless tab view fills the content area; the toolbar selects tabs.
+        self._tab_view = NSTabView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, WIN_W, CONTENT_H)
+        )
+        self._tab_view.setTabViewType_(NSNoTabsNoBorder)
+        self._window.setContentView_(self._tab_view)
 
-        # --- Language ---
-        y -= 30
-        label = NSTextField.labelWithString_(t("settings.language.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
+        builders = {
+            _TAB_GENERAL: self._build_general_tab,
+            _TAB_AUDIO: self._build_audio_tab,
+            _TAB_LANGUAGE: self._build_language_tab,
+            _TAB_SYSTEM: self._build_system_tab,
+        }
+        for tab_id in _TAB_IDS:
+            item = NSTabViewItem.alloc().initWithIdentifier_(tab_id)
+            item.setLabel_(self._tab_label(tab_id))
+            view = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, WIN_W, CONTENT_H))
+            builders[tab_id](view)
+            item.setView_(view)
+            self._tab_view.addTabViewItem_(item)
+
+        # Toolbar — System-Settings style (centered icon + label tabs).
+        toolbar = NSToolbar.alloc().initWithIdentifier_("vvriteSettingsToolbar")
+        toolbar.setDelegate_(self)
+        toolbar.setDisplayMode_(NSToolbarDisplayModeIconAndLabel)
+        toolbar.setSelectedItemIdentifier_(_TAB_GENERAL)
+        self._window.setToolbar_(toolbar)
+        try:
+            self._window.setToolbarStyle_(NSWindowToolbarStylePreference)
+        except Exception:
+            pass
+
+        self._tab_view.selectTabViewItemWithIdentifier_(_TAB_GENERAL)
+        self._window.setTitle_(self._tab_label(_TAB_GENERAL))
+        self._window.center()
+
+        # Initial dynamic states
+        self._apply_recording_mode_ui()
+        self._update_permissions()
+        self._refresh_login_checkbox()
+        self._refresh_retract_controls()
+
+    # --- Layout helpers ---
+
+    def _tab_label(self, tab_id):
+        return t(f"settings.tabs.{tab_id}")
+
+    def _add_header(self, content, y, text):
+        label = NSTextField.labelWithString_(text)
+        label.setFrame_(NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 18))
         label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
         content.addSubview_(label)
+        box = NSBox.alloc().initWithFrame_(NSMakeRect(MARGIN, y - 7, WIN_W - 2 * MARGIN, 1))
+        box.setBoxType_(NSBoxSeparator)
+        content.addSubview_(box)
 
-        y -= 30
-        ui_lang_label = NSTextField.labelWithString_(t("settings.language.ui_language"))
-        ui_lang_label.setFrame_(NSMakeRect(20, y, 130, 20))
-        ui_lang_label.setAlignment_(2)  # NSTextAlignmentRight
-        ui_lang_label.setTextColor_(NSColor.secondaryLabelColor())
-        ui_lang_label.setFont_(NSFont.systemFontOfSize_(12.0))
-        content.addSubview_(ui_lang_label)
+    def _add_field_label(self, content, y, text):
+        label = NSTextField.labelWithString_(text)
+        label.setFrame_(NSMakeRect(MARGIN, y, LABEL_W, 20))
+        label.setAlignment_(2)  # NSTextAlignmentRight
+        label.setTextColor_(NSColor.secondaryLabelColor())
+        label.setFont_(NSFont.systemFontOfSize_(12.0))
+        content.addSubview_(label)
+        return label
 
+    def _add_hint(self, content, y, text, x=CTRL_X, w=None):
+        if w is None:
+            w = WIN_W - x - MARGIN
+        hint = NSTextField.labelWithString_(text)
+        hint.setFrame_(NSMakeRect(x, y, w, 16))
+        hint.setFont_(NSFont.systemFontOfSize_(11.0))
+        hint.setTextColor_(NSColor.secondaryLabelColor())
+        content.addSubview_(hint)
+        return hint
+
+    # --- Tab builders ---
+
+    def _build_general_tab(self, content):
+        y = CONTENT_H - 36
+
+        # Recording mode
+        self._add_header(content, y, t("settings.recording.title"))
+        y -= 36
+        self._add_field_label(content, y, t("settings.recording.mode"))
+        self._mode_segmented = NSSegmentedControl.alloc().initWithFrame_(
+            NSMakeRect(CTRL_X, y - 1, 260, 24)
+        )
+        self._mode_segmented.setSegmentCount_(2)
+        self._mode_segmented.setLabel_forSegment_(t("settings.recording.toggle"), 0)
+        self._mode_segmented.setLabel_forSegment_(t("settings.recording.push_to_talk"), 1)
+        self._mode_segmented.setWidth_forSegment_(125, 0)
+        self._mode_segmented.setWidth_forSegment_(125, 1)
+        self._mode_segmented.setSelectedSegment_(
+            1 if self._prefs.recording_mode == "hold" else 0
+        )
+        self._mode_segmented.setTarget_(self)
+        self._mode_segmented.setAction_("recordingModeChanged:")
+        content.addSubview_(self._mode_segmented)
+
+        y -= 38
+        self._mode_hotkey_label = self._add_field_label(
+            content, y, t("settings.recording.toggle_shortcut")
+        )
+        self._shortcut_field = ShortcutField.alloc().initWithFrame_preferences_(
+            NSMakeRect(CTRL_X, y, 200, 24), self._prefs
+        )
+        self._shortcut_field._on_change = self._update_hotkey_display
+        content.addSubview_(self._shortcut_field)
+
+        self._ptt_shortcut_field = (
+            ShortcutField.alloc()
+            .initWithFrame_preferences_keycodeKey_modifiersKey_allowModifierOnly_(
+                NSMakeRect(CTRL_X, y, 200, 24),
+                self._prefs,
+                "ptt_hotkey_keycode",
+                "ptt_hotkey_modifiers",
+                True,
+            )
+        )
+        self._ptt_shortcut_field._on_change = self._update_hotkey_display
+        content.addSubview_(self._ptt_shortcut_field)
+
+        change_btn = NSButton.alloc().initWithFrame_(NSMakeRect(CTRL_X + 208, y, 72, 24))
+        change_btn.setTitle_(t("common.change"))
+        change_btn.setBezelStyle_(NSBezelStyleRounded)
+        change_btn.setTarget_(self)
+        change_btn.setAction_("changeShortcut:")
+        content.addSubview_(change_btn)
+
+        y -= 26
+        self._mode_hint = self._add_hint(content, y, t("settings.recording.toggle_hint"))
+
+        # Correction
+        y -= 40
+        self._add_header(content, y, t("settings.correction.title"))
+
+        y -= 32
+        self._retract_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
+        )
+        self._retract_checkbox.setButtonType_(NSButtonTypeSwitch)
+        self._retract_checkbox.setTitle_(t("settings.correction.enable"))
+        self._retract_checkbox.setState_(
+            1 if self._prefs.retract_last_dictation_enabled else 0
+        )
+        self._retract_checkbox.setTarget_(self)
+        self._retract_checkbox.setAction_("retractShortcutToggled:")
+        content.addSubview_(self._retract_checkbox)
+
+        y -= 32
+        self._retract_shortcut_field = (
+            ShortcutField.alloc().initWithFrame_preferences_keycodeKey_modifiersKey_(
+                NSMakeRect(MARGIN, y, 200, 24),
+                self._prefs,
+                "retract_hotkey_keycode",
+                "retract_hotkey_modifiers",
+            )
+        )
+        content.addSubview_(self._retract_shortcut_field)
+
+        self._retract_change_btn = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN + 208, y, 72, 24)
+        )
+        self._retract_change_btn.setTitle_(t("common.change"))
+        self._retract_change_btn.setBezelStyle_(NSBezelStyleRounded)
+        self._retract_change_btn.setTarget_(self)
+        self._retract_change_btn.setAction_("changeRetractShortcut:")
+        content.addSubview_(self._retract_change_btn)
+
+        y -= 22
+        self._add_hint(content, y, t("settings.correction.hint"), x=MARGIN)
+
+    def _build_audio_tab(self, content):
+        y = CONTENT_H - 36
+
+        # Microphone
+        self._add_header(content, y, t("settings.microphone.title"))
+        y -= 36
+        self._mic_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24), False
+        )
+        self._populate_mics()
+        self._mic_popup.setTarget_(self)
+        self._mic_popup.setAction_("micChanged:")
+        content.addSubview_(self._mic_popup)
+
+        # Sound
+        y -= 44
+        self._add_header(content, y, t("settings.sound.title"))
+
+        y -= 34
+        self._start_sound_popup = self._build_sound_row(
+            content, y, t("settings.sound.start"), self._prefs.start_volume,
+            "startSoundChanged:", "startVolumeChanged:", "start"
+        )
+
+        y -= 34
+        self._stop_sound_popup = self._build_sound_row(
+            content, y, t("settings.sound.stop"), self._prefs.stop_volume,
+            "stopSoundChanged:", "stopVolumeChanged:", "stop"
+        )
+
+        y -= 26
+        self._add_hint(content, y, t("settings.sound.hint"), x=96)
+
+        self._populate_sounds()
+
+    def _build_sound_row(self, content, y, label_text, volume, sound_action,
+                         volume_action, which):
+        label = NSTextField.labelWithString_(label_text)
+        label.setFrame_(NSMakeRect(MARGIN, y, 60, 20))
+        label.setAlignment_(2)  # NSTextAlignmentRight
+        label.setTextColor_(NSColor.secondaryLabelColor())
+        label.setFont_(NSFont.systemFontOfSize_(12.0))
+        content.addSubview_(label)
+
+        popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(96, y, 150, 24), False
+        )
+        popup.setTarget_(self)
+        popup.setAction_(sound_action)
+        content.addSubview_(popup)
+
+        slider = NSSlider.alloc().initWithFrame_(NSMakeRect(258, y, 150, 24))
+        slider.setMinValue_(0)
+        slider.setMaxValue_(100)
+        slider.setIntValue_(int(volume * 100))
+        slider.setContinuous_(True)
+        slider.setTarget_(self)
+        slider.setAction_(volume_action)
+        content.addSubview_(slider)
+
+        vol_label = NSTextField.labelWithString_(f"{int(volume * 100)}%")
+        vol_label.setFrame_(NSMakeRect(416, y, 40, 20))
+        vol_label.setTextColor_(NSColor.secondaryLabelColor())
+        vol_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        content.addSubview_(vol_label)
+
+        if which == "start":
+            self._start_volume_slider = slider
+            self._start_volume_label = vol_label
+        else:
+            self._stop_volume_slider = slider
+            self._stop_volume_label = vol_label
+        return popup
+
+    def _build_language_tab(self, content):
+        y = CONTENT_H - 36
+
+        # Language
+        self._add_header(content, y, t("settings.language.title"))
+
+        y -= 36
+        self._add_field_label(content, y, t("settings.language.ui_language"))
         self._ui_lang_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(156, y, 224, 24), False
+            NSMakeRect(CTRL_X, y, CTRL_W, 24), False
         )
         self._ui_lang_popup.addItemWithTitle_(t("common.system_default"))
         for code, native_name in SUPPORTED_LANGUAGES:
             self._ui_lang_popup.addItemWithTitle_(native_name)
-        # Select current value
         current_ui = self._prefs.ui_language
         if current_ui is None:
             self._ui_lang_popup.selectItemAtIndex_(0)
@@ -119,21 +391,14 @@ class SettingsWindowController(NSObject):
         self._ui_lang_popup.setAction_("uiLanguageChanged:")
         content.addSubview_(self._ui_lang_popup)
 
-        y -= 30
-        asr_lang_label = NSTextField.labelWithString_(t("settings.language.asr_language"))
-        asr_lang_label.setFrame_(NSMakeRect(20, y, 130, 20))
-        asr_lang_label.setAlignment_(2)  # NSTextAlignmentRight
-        asr_lang_label.setTextColor_(NSColor.secondaryLabelColor())
-        asr_lang_label.setFont_(NSFont.systemFontOfSize_(12.0))
-        content.addSubview_(asr_lang_label)
-
+        y -= 34
+        self._add_field_label(content, y, t("settings.language.asr_language"))
         self._asr_lang_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(156, y, 224, 24), False
+            NSMakeRect(CTRL_X, y, CTRL_W, 24), False
         )
         self._asr_lang_popup.addItemWithTitle_(t("common.automatic"))
         for code, native_name in SUPPORTED_LANGUAGES:
             self._asr_lang_popup.addItemWithTitle_(native_name)
-        # Select current value
         current_asr = self._prefs.asr_language
         if current_asr == "auto":
             self._asr_lang_popup.selectItemAtIndex_(0)
@@ -148,248 +413,75 @@ class SettingsWindowController(NSObject):
         self._asr_lang_popup.setAction_("asrLanguageChanged:")
         content.addSubview_(self._asr_lang_popup)
 
-        # --- Shortcut ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.shortcut.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
+        # Custom Words
+        y -= 44
+        self._add_header(content, y, t("settings.custom_words.title"))
 
-        y -= 30
-        self._shortcut_field = ShortcutField.alloc().initWithFrame_preferences_(
-            NSMakeRect(20, y, 280, 24), self._prefs
-        )
-        self._shortcut_field._on_change = self._update_hotkey_display
-        content.addSubview_(self._shortcut_field)
-
-        change_btn = NSButton.alloc().initWithFrame_(NSMakeRect(310, y, 80, 24))
-        change_btn.setTitle_(t("common.change"))
-        change_btn.setBezelStyle_(NSBezelStyleRounded)
-        change_btn.setTarget_(self)
-        change_btn.setAction_("changeShortcut:")
-        content.addSubview_(change_btn)
-
-        # --- Correction ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.correction.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
-
-        y -= 30
-        self._retract_checkbox = NSButton.alloc().initWithFrame_(NSMakeRect(20, y, 360, 20))
-        self._retract_checkbox.setButtonType_(NSButtonTypeSwitch)
-        self._retract_checkbox.setTitle_(t("settings.correction.enable"))
-        self._retract_checkbox.setState_(
-            1 if self._prefs.retract_last_dictation_enabled else 0
-        )
-        self._retract_checkbox.setTarget_(self)
-        self._retract_checkbox.setAction_("retractShortcutToggled:")
-        content.addSubview_(self._retract_checkbox)
-
-        y -= 30
-        self._retract_shortcut_field = (
-            ShortcutField.alloc().initWithFrame_preferences_keycodeKey_modifiersKey_(
-                NSMakeRect(20, y, 280, 24),
-                self._prefs,
-                "retract_hotkey_keycode",
-                "retract_hotkey_modifiers",
-            )
-        )
-        content.addSubview_(self._retract_shortcut_field)
-
-        self._retract_change_btn = NSButton.alloc().initWithFrame_(NSMakeRect(310, y, 80, 24))
-        self._retract_change_btn.setTitle_(t("common.change"))
-        self._retract_change_btn.setBezelStyle_(NSBezelStyleRounded)
-        self._retract_change_btn.setTarget_(self)
-        self._retract_change_btn.setAction_("changeRetractShortcut:")
-        content.addSubview_(self._retract_change_btn)
-
-        y -= 20
-        hint = NSTextField.labelWithString_(
-            t("settings.correction.hint")
-        )
-        hint.setFrame_(NSMakeRect(20, y, 360, 16))
-        hint.setFont_(NSFont.systemFontOfSize_(11.0))
-        hint.setTextColor_(NSColor.secondaryLabelColor())
-        content.addSubview_(hint)
-
-        # --- Microphone ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.microphone.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
-
-        y -= 30
-        self._mic_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(20, y, 360, 24), False
-        )
-        self._populate_mics()
-        self._mic_popup.setTarget_(self)
-        self._mic_popup.setAction_("micChanged:")
-        content.addSubview_(self._mic_popup)
-
-        # --- Model ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.model.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
-
-        y -= 26
-        model_label = NSTextField.labelWithString_(self._prefs.model_id)
-        model_label.setFrame_(NSMakeRect(20, y, 360, 20))
-        model_label.setTextColor_(NSColor.secondaryLabelColor())
-        content.addSubview_(model_label)
-
-        # --- Custom Words ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.custom_words.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
-
-        y -= 26
+        y -= 32
         self._custom_words_field = NSTextField.alloc().initWithFrame_(
-            NSMakeRect(20, y, 360, 24)
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
         )
         self._custom_words_field.setStringValue_(self._prefs.custom_words)
         self._custom_words_field.setPlaceholderString_(t("settings.custom_words.placeholder"))
         self._custom_words_field.setDelegate_(self)
         content.addSubview_(self._custom_words_field)
 
-        y -= 20
-        hint = NSTextField.labelWithString_(
-            t("settings.custom_words.hint")
-        )
-        hint.setFrame_(NSMakeRect(20, y, 360, 16))
-        hint.setFont_(NSFont.systemFontOfSize_(11.0))
-        hint.setTextColor_(NSColor.secondaryLabelColor())
-        content.addSubview_(hint)
+        y -= 22
+        self._add_hint(content, y, t("settings.custom_words.hint"), x=MARGIN)
 
-        # --- Sound ---
+        # Model
         y -= 40
-        label = NSTextField.labelWithString_(t("settings.sound.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
+        self._add_header(content, y, t("settings.model.title"))
 
-        # Start sound row
-        y -= 30
-        start_label = NSTextField.labelWithString_(t("settings.sound.start"))
-        start_label.setFrame_(NSMakeRect(20, y, 50, 20))
-        start_label.setAlignment_(2)  # NSTextAlignmentRight
-        start_label.setTextColor_(NSColor.secondaryLabelColor())
-        start_label.setFont_(NSFont.systemFontOfSize_(12.0))
-        content.addSubview_(start_label)
+        y -= 28
+        model_label = NSTextField.labelWithString_(self._prefs.model_id)
+        model_label.setFrame_(NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20))
+        model_label.setTextColor_(NSColor.secondaryLabelColor())
+        model_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        content.addSubview_(model_label)
 
-        self._start_sound_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(76, y, 140, 24), False
+    def _build_system_tab(self, content):
+        y = CONTENT_H - 36
+
+        # Permissions
+        self._add_header(content, y, t("settings.permissions.title"))
+
+        y -= 34
+        self._acc_label = NSTextField.labelWithString_(
+            t("settings.permissions.accessibility_checking")
         )
-        self._start_sound_popup.setTarget_(self)
-        self._start_sound_popup.setAction_("startSoundChanged:")
-        content.addSubview_(self._start_sound_popup)
-
-        self._start_volume_slider = NSSlider.alloc().initWithFrame_(
-            NSMakeRect(222, y, 120, 24)
-        )
-        self._start_volume_slider.setMinValue_(0)
-        self._start_volume_slider.setMaxValue_(100)
-        self._start_volume_slider.setIntValue_(int(self._prefs.start_volume * 100))
-        self._start_volume_slider.setContinuous_(True)
-        self._start_volume_slider.setTarget_(self)
-        self._start_volume_slider.setAction_("startVolumeChanged:")
-        content.addSubview_(self._start_volume_slider)
-
-        self._start_volume_label = NSTextField.labelWithString_(
-            f"{int(self._prefs.start_volume * 100)}%"
-        )
-        self._start_volume_label.setFrame_(NSMakeRect(348, y, 40, 20))
-        self._start_volume_label.setTextColor_(NSColor.secondaryLabelColor())
-        self._start_volume_label.setFont_(NSFont.systemFontOfSize_(11.0))
-        content.addSubview_(self._start_volume_label)
-
-        # Stop sound row
-        y -= 30
-        stop_label = NSTextField.labelWithString_(t("settings.sound.stop"))
-        stop_label.setFrame_(NSMakeRect(20, y, 50, 20))
-        stop_label.setAlignment_(2)  # NSTextAlignmentRight
-        stop_label.setTextColor_(NSColor.secondaryLabelColor())
-        stop_label.setFont_(NSFont.systemFontOfSize_(12.0))
-        content.addSubview_(stop_label)
-
-        self._stop_sound_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(76, y, 140, 24), False
-        )
-        self._stop_sound_popup.setTarget_(self)
-        self._stop_sound_popup.setAction_("stopSoundChanged:")
-        content.addSubview_(self._stop_sound_popup)
-
-        self._stop_volume_slider = NSSlider.alloc().initWithFrame_(
-            NSMakeRect(222, y, 120, 24)
-        )
-        self._stop_volume_slider.setMinValue_(0)
-        self._stop_volume_slider.setMaxValue_(100)
-        self._stop_volume_slider.setIntValue_(int(self._prefs.stop_volume * 100))
-        self._stop_volume_slider.setContinuous_(True)
-        self._stop_volume_slider.setTarget_(self)
-        self._stop_volume_slider.setAction_("stopVolumeChanged:")
-        content.addSubview_(self._stop_volume_slider)
-
-        self._stop_volume_label = NSTextField.labelWithString_(
-            f"{int(self._prefs.stop_volume * 100)}%"
-        )
-        self._stop_volume_label.setFrame_(NSMakeRect(348, y, 40, 20))
-        self._stop_volume_label.setTextColor_(NSColor.secondaryLabelColor())
-        self._stop_volume_label.setFont_(NSFont.systemFontOfSize_(11.0))
-        content.addSubview_(self._stop_volume_label)
-
-        y -= 20
-        hint = NSTextField.labelWithString_(
-            t("settings.sound.hint")
-        )
-        hint.setFrame_(NSMakeRect(76, y, 310, 16))
-        hint.setFont_(NSFont.systemFontOfSize_(11.0))
-        hint.setTextColor_(NSColor.secondaryLabelColor())
-        content.addSubview_(hint)
-
-        self._populate_sounds()
-
-        # --- Permissions ---
-        y -= 40
-        label = NSTextField.labelWithString_(t("settings.permissions.title"))
-        label.setFrame_(NSMakeRect(20, y, 360, 20))
-        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
-        content.addSubview_(label)
-
-        y -= 26
-        self._acc_label = NSTextField.labelWithString_(t("settings.permissions.accessibility_checking"))
-        self._acc_label.setFrame_(NSMakeRect(20, y, 250, 20))
+        self._acc_label.setFrame_(NSMakeRect(MARGIN, y, 300, 20))
         content.addSubview_(self._acc_label)
 
-        acc_btn = NSButton.alloc().initWithFrame_(NSMakeRect(310, y, 70, 24))
+        acc_btn = NSButton.alloc().initWithFrame_(NSMakeRect(RIGHT - 72, y, 72, 24))
         acc_btn.setTitle_(t("common.open"))
         acc_btn.setBezelStyle_(NSBezelStyleRounded)
         acc_btn.setTarget_(self)
         acc_btn.setAction_("openAccessibility:")
         content.addSubview_(acc_btn)
 
-        y -= 26
-        self._mic_label = NSTextField.labelWithString_(t("settings.permissions.microphone_checking"))
-        self._mic_label.setFrame_(NSMakeRect(20, y, 250, 20))
+        y -= 32
+        self._mic_label = NSTextField.labelWithString_(
+            t("settings.permissions.microphone_checking")
+        )
+        self._mic_label.setFrame_(NSMakeRect(MARGIN, y, 300, 20))
         content.addSubview_(self._mic_label)
 
-        mic_perm_btn = NSButton.alloc().initWithFrame_(NSMakeRect(310, y, 70, 24))
+        mic_perm_btn = NSButton.alloc().initWithFrame_(NSMakeRect(RIGHT - 72, y, 72, 24))
         mic_perm_btn.setTitle_(t("common.open"))
         mic_perm_btn.setBezelStyle_(NSBezelStyleRounded)
         mic_perm_btn.setTarget_(self)
         mic_perm_btn.setAction_("openMicrophonePrivacy:")
         content.addSubview_(mic_perm_btn)
 
-        # --- Launch at Login ---
-        y -= 40
-        self._login_checkbox = NSButton.alloc().initWithFrame_(NSMakeRect(20, y, 360, 20))
+        # Startup & Updates
+        y -= 44
+        self._add_header(content, y, t("settings.startup.title"))
+
+        y -= 32
+        self._login_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
+        )
         self._login_checkbox.setButtonType_(NSButtonTypeSwitch)
         self._login_checkbox.setTitle_(t("settings.login.title"))
         self._login_checkbox.setState_(1 if self._prefs.launch_at_login else 0)
@@ -397,9 +489,10 @@ class SettingsWindowController(NSObject):
         self._login_checkbox.setAction_("loginToggled:")
         content.addSubview_(self._login_checkbox)
 
-        # --- Automatically check for updates ---
-        y -= 34
-        self._update_checkbox = NSButton.alloc().initWithFrame_(NSMakeRect(20, y, 360, 20))
+        y -= 30
+        self._update_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
+        )
         self._update_checkbox.setButtonType_(NSButtonTypeSwitch)
         self._update_checkbox.setTitle_(t("settings.update.title"))
         self._update_checkbox.setState_(1 if self._auto_update_check_enabled() else 0)
@@ -407,9 +500,65 @@ class SettingsWindowController(NSObject):
         self._update_checkbox.setAction_("updateCheckToggled:")
         content.addSubview_(self._update_checkbox)
 
-        self._update_permissions()
-        self._refresh_login_checkbox()
-        self._refresh_retract_controls()
+    # --- Toolbar delegate ---
+
+    def toolbarAllowedItemIdentifiers_(self, toolbar):
+        return list(_TAB_IDS)
+
+    def toolbarDefaultItemIdentifiers_(self, toolbar):
+        return list(_TAB_IDS)
+
+    def toolbarSelectableItemIdentifiers_(self, toolbar):
+        return list(_TAB_IDS)
+
+    def toolbar_itemForItemIdentifier_willBeInsertedIntoToolbar_(
+        self, toolbar, identifier, flag
+    ):
+        item = NSToolbarItem.alloc().initWithItemIdentifier_(identifier)
+        item.setLabel_(self._tab_label(identifier))
+        image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+            _TAB_ICONS.get(identifier, "gearshape"), None
+        )
+        if image is not None:
+            item.setImage_(image)
+        item.setTarget_(self)
+        item.setAction_("tabSelected:")
+        return item
+
+    @objc.typedSelector(b"v@:@")
+    def tabSelected_(self, sender):
+        identifier = sender.itemIdentifier()
+        self._tab_view.selectTabViewItemWithIdentifier_(identifier)
+        self._window.setTitle_(self._tab_label(identifier))
+        self._window.toolbar().setSelectedItemIdentifier_(identifier)
+
+    # --- Recording mode ---
+
+    @objc.typedSelector(b"v@:@")
+    def recordingModeChanged_(self, sender):
+        mode = "hold" if sender.selectedSegment() == 1 else "toggle"
+        self._prefs.recording_mode = mode
+        self._apply_recording_mode_ui()
+        self._update_hotkey_display()
+
+    def _apply_recording_mode_ui(self):
+        hold = self._prefs.recording_mode == "hold"
+        if self._mode_segmented is not None:
+            self._mode_segmented.setSelectedSegment_(1 if hold else 0)
+        if self._shortcut_field is not None:
+            self._shortcut_field.setHidden_(hold)
+        if self._ptt_shortcut_field is not None:
+            self._ptt_shortcut_field.setHidden_(not hold)
+        if self._mode_hotkey_label is not None:
+            self._mode_hotkey_label.setStringValue_(
+                t("settings.recording.ptt_shortcut") if hold
+                else t("settings.recording.toggle_shortcut")
+            )
+        if self._mode_hint is not None:
+            self._mode_hint.setStringValue_(
+                t("settings.recording.ptt_hint") if hold
+                else t("settings.recording.toggle_hint")
+            )
 
     def _populate_sounds(self):
         """Populate both sound dropdowns with system sounds + Custom option."""
@@ -495,14 +644,15 @@ class SettingsWindowController(NSObject):
     def _update_hotkey_display(self):
         delegate = NSApp.delegate()
         if delegate and delegate._status_bar:
-            hotkey_str = format_shortcut(
-                self._prefs.hotkey_keycode, self._prefs.hotkey_modifiers
-            )
+            hotkey_str = format_shortcut(*active_shortcut(self._prefs))
             delegate._status_bar.setHotkeyDisplay_(hotkey_str)
 
     @objc.typedSelector(b"v@:@")
     def changeShortcut_(self, sender):
-        self._shortcut_field.startCapture()
+        if self._prefs.recording_mode == "hold":
+            self._ptt_shortcut_field.startCapture()
+        else:
+            self._shortcut_field.startCapture()
 
     @objc.typedSelector(b"v@:@")
     def changeRetractShortcut_(self, sender):

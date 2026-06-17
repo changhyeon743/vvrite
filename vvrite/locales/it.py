@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Scorciatoia",
         },
+        "tabs": {
+            "general": "Generale",
+            "audio": "Audio",
+            "language": "Lingua",
+            "system": "Sistema",
+        },
+        "recording": {
+            "title": "Modalità di registrazione",
+            "mode": "Modalità",
+            "toggle": "Interruttore",
+            "push_to_talk": "Premi e parla",
+            "toggle_shortcut": "Scorciatoia",
+            "ptt_shortcut": "Tasto premi e parla",
+            "toggle_hint": "Premi una volta per iniziare, premi di nuovo per fermare.",
+            "ptt_hint": "Tieni premuto il tasto per registrare, rilascia per trascrivere.",
+        },
+        "startup": {
+            "title": "Avvio e aggiornamenti",
+        },
         "correction": {
             "title": "Correzione",
             "enable": "Abilita scorciatoia per ritirare l'ultima dettatura",

@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Raccourci",
         },
+        "tabs": {
+            "general": "Général",
+            "audio": "Audio",
+            "language": "Langue",
+            "system": "Système",
+        },
+        "recording": {
+            "title": "Mode d'enregistrement",
+            "mode": "Mode",
+            "toggle": "Bascule",
+            "push_to_talk": "Appuyer pour parler",
+            "toggle_shortcut": "Raccourci",
+            "ptt_shortcut": "Touche « appuyer pour parler »",
+            "toggle_hint": "Appuyez une fois pour démarrer, appuyez de nouveau pour arrêter.",
+            "ptt_hint": "Maintenez la touche pour enregistrer, relâchez pour transcrire.",
+        },
+        "startup": {
+            "title": "Démarrage et mises à jour",
+        },
         "correction": {
             "title": "Correction",
             "enable": "Activer le raccourci de retrait de la dernière dictée",

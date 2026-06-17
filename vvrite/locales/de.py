@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "Tastenkürzel",
         },
+        "tabs": {
+            "general": "Allgemein",
+            "audio": "Audio",
+            "language": "Sprache",
+            "system": "System",
+        },
+        "recording": {
+            "title": "Aufnahmemodus",
+            "mode": "Modus",
+            "toggle": "Umschalten",
+            "push_to_talk": "Push-to-Talk",
+            "toggle_shortcut": "Tastenkürzel",
+            "ptt_shortcut": "Push-to-Talk-Taste",
+            "toggle_hint": "Einmal drücken zum Starten, erneut drücken zum Stoppen.",
+            "ptt_hint": "Taste gedrückt halten zum Aufnehmen, loslassen zum Transkribieren.",
+        },
+        "startup": {
+            "title": "Start & Updates",
+        },
         "correction": {
             "title": "Korrektur",
             "enable": "Tastenkürzel zum Widerrufen der letzten Diktierung aktivieren",

@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "快捷鍵",
         },
+        "tabs": {
+            "general": "一般",
+            "audio": "音訊",
+            "language": "語言",
+            "system": "系統",
+        },
+        "recording": {
+            "title": "錄音模式",
+            "mode": "模式",
+            "toggle": "切換",
+            "push_to_talk": "按住說話",
+            "toggle_shortcut": "快捷鍵",
+            "ptt_shortcut": "按住說話按鍵",
+            "toggle_hint": "按一下開始，再按一下停止。",
+            "ptt_hint": "按住按鍵錄音，放開即開始轉錄。",
+        },
+        "startup": {
+            "title": "啟動與更新",
+        },
         "correction": {
             "title": "更正",
             "enable": "啟用撤回上次聽寫快捷鍵",

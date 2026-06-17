@@ -14,6 +14,13 @@ _LEGACY_DEFAULTS_DOMAINS = ("com.vvrite.app", "python3", "python")
 _DEFAULTS = {
     "hotkey_keycode": 0x31,  # Space
     "hotkey_modifiers": int(kCGEventFlagMaskAlternate),
+    # Recording mode: "toggle" (press to start / press to stop, the default)
+    # or "hold" (push-to-talk — hold the key to record, release to transcribe).
+    "recording_mode": "toggle",
+    # Push-to-talk hotkey, used only when recording_mode == "hold". Defaults to
+    # Right Command (a modifier-only shortcut: keycode 0x36, no extra modifiers).
+    "ptt_hotkey_keycode": 0x36,  # Right Command (kVK_RightCommand)
+    "ptt_hotkey_modifiers": 0,
     "retract_last_dictation_enabled": False,
     "retract_hotkey_keycode": 0x06,  # Z
     "retract_hotkey_modifiers": int(kCGEventFlagMaskAlternate | kCGEventFlagMaskShift),
@@ -120,6 +127,30 @@ class Preferences:
     @hotkey_modifiers.setter
     def hotkey_modifiers(self, value: int):
         self._set("hotkey_modifiers", value)
+
+    @property
+    def recording_mode(self) -> str:
+        return str(self._get("recording_mode"))
+
+    @recording_mode.setter
+    def recording_mode(self, value: str):
+        self._set("recording_mode", value)
+
+    @property
+    def ptt_hotkey_keycode(self) -> int:
+        return int(self._get("ptt_hotkey_keycode"))
+
+    @ptt_hotkey_keycode.setter
+    def ptt_hotkey_keycode(self, value: int):
+        self._set("ptt_hotkey_keycode", value)
+
+    @property
+    def ptt_hotkey_modifiers(self) -> int:
+        return int(self._get("ptt_hotkey_modifiers"))
+
+    @ptt_hotkey_modifiers.setter
+    def ptt_hotkey_modifiers(self, value: int):
+        self._set("ptt_hotkey_modifiers", value)
 
     @property
     def retract_last_dictation_enabled(self) -> bool:

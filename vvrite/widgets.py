@@ -9,6 +9,7 @@ from AppKit import (
     NSEventModifierFlagShift,
     NSEventModifierFlagControl,
     NSEventModifierFlagOption,
+    NSEventModifierFlagFunction,
 )
 from Quartz import (
     kCGEventFlagMaskCommand,
@@ -28,6 +29,28 @@ _KEY_MAP = {
     0x20: "U", 0x22: "I", 0x23: "P", 0x25: "L", 0x26: "J",
     0x28: "K", 0x2C: "/", 0x2D: "N", 0x2E: "M", 0x31: "Space",
     0x33: "Delete",
+    # Modifier keys — used for modifier-only (push-to-talk) shortcuts. These
+    # are stored with modifiers == 0, so the key label alone names the shortcut.
+    0x37: "Left ⌘", 0x36: "Right ⌘",
+    0x3A: "Left ⌥", 0x3D: "Right ⌥",
+    0x38: "Left ⇧", 0x3C: "Right ⇧",
+    0x3B: "Left ⌃", 0x3E: "Right ⌃",
+    0x3F: "fn",
+}
+
+# CGEvent/virtual keycode -> the AppKit device-independent modifier flag that
+# becomes set while that physical modifier key is held. Used to detect the
+# press (vs release) transition during modifier-only shortcut capture.
+_MODIFIER_KEYCODE_FLAG = {
+    0x37: NSEventModifierFlagCommand,
+    0x36: NSEventModifierFlagCommand,
+    0x38: NSEventModifierFlagShift,
+    0x3C: NSEventModifierFlagShift,
+    0x3A: NSEventModifierFlagOption,
+    0x3D: NSEventModifierFlagOption,
+    0x3B: NSEventModifierFlagControl,
+    0x3E: NSEventModifierFlagControl,
+    0x3F: NSEventModifierFlagFunction,
 }
 
 
@@ -47,6 +70,13 @@ def format_shortcut(keycode: int, modifiers: int) -> str:
     return "".join(parts)
 
 
+def active_shortcut(prefs):
+    """Return the (keycode, modifiers) pair for the active recording mode."""
+    if prefs.recording_mode == "hold":
+        return prefs.ptt_hotkey_keycode, prefs.ptt_hotkey_modifiers
+    return prefs.hotkey_keycode, prefs.hotkey_modifiers
+
+
 class ShortcutField(NSTextField):
     """Text field that captures key combinations."""
 
@@ -57,6 +87,21 @@ class ShortcutField(NSTextField):
             "hotkey_keycode",
             "hotkey_modifiers",
         )
+
+    def initWithFrame_preferences_keycodeKey_modifiersKey_allowModifierOnly_(
+        self,
+        frame,
+        prefs,
+        keycode_key,
+        modifiers_key,
+        allow_modifier_only,
+    ):
+        self = self.initWithFrame_preferences_keycodeKey_modifiersKey_(
+            frame, prefs, keycode_key, modifiers_key
+        )
+        if self is not None:
+            self._allow_modifier_only = bool(allow_modifier_only)
+        return self
 
     def initWithFrame_preferences_keycodeKey_modifiersKey_(
         self,
@@ -73,6 +118,9 @@ class ShortcutField(NSTextField):
         self._modifiers_key = str(modifiers_key)
         self._capturing = False
         self._on_change = None
+        # When True, a lone modifier (e.g. Right Command) can be captured as the
+        # shortcut. Only the push-to-talk field opts into this.
+        self._allow_modifier_only = False
         self.setEditable_(False)
         self.setSelectable_(False)
         self.setBezeled_(True)
@@ -124,6 +172,37 @@ class ShortcutField(NSTextField):
         self._update_display()
         if self._on_change:
             self._on_change()
+
+    def flagsChanged_(self, event):
+        # Capture a lone modifier (e.g. Right Command) as a push-to-talk key.
+        # A bare modifier press fires flagsChanged: rather than keyDown:.
+        if not self._capturing or not self._allow_modifier_only:
+            return
+
+        keycode = event.keyCode()
+        flag = _MODIFIER_KEYCODE_FLAG.get(keycode)
+        if flag is None:
+            return  # not a known modifier key — let keyDown: handle real keys
+
+        # Commit only on the down transition (the modifier's flag is now set);
+        # ignore the matching release event.
+        if not (event.modifierFlags() & flag):
+            return
+
+        setattr(self._prefs, self._keycode_key, keycode)
+        setattr(self._prefs, self._modifiers_key, 0)
+        self._capturing = False
+        self._update_display()
+        if self._on_change:
+            self._on_change()
+
+    def resignFirstResponder(self):
+        # Abort an in-progress capture if focus moves away, so the field never
+        # gets stuck showing the "Press shortcut..." prompt.
+        if self._capturing:
+            self._capturing = False
+            self._update_display()
+        return objc.super(ShortcutField, self).resignFirstResponder()
 
     def acceptsFirstResponder(self):
         return True

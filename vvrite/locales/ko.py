@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "단축키",
         },
+        "tabs": {
+            "general": "일반",
+            "audio": "오디오",
+            "language": "언어",
+            "system": "시스템",
+        },
+        "recording": {
+            "title": "녹음 모드",
+            "mode": "모드",
+            "toggle": "토글",
+            "push_to_talk": "푸시투토크",
+            "toggle_shortcut": "단축키",
+            "ptt_shortcut": "푸시투토크 키",
+            "toggle_hint": "한 번 누르면 시작, 다시 누르면 중지합니다.",
+            "ptt_hint": "키를 누르고 있는 동안 녹음하고, 떼면 변환합니다.",
+        },
+        "startup": {
+            "title": "시작 및 업데이트",
+        },
         "correction": {
             "title": "수정",
             "enable": "마지막 받아쓰기 취소 단축키 활성화",

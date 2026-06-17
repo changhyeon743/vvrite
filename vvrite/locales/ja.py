@@ -74,6 +74,25 @@ strings = {
         "shortcut": {
             "title": "ショートカット",
         },
+        "tabs": {
+            "general": "一般",
+            "audio": "オーディオ",
+            "language": "言語",
+            "system": "システム",
+        },
+        "recording": {
+            "title": "録音モード",
+            "mode": "モード",
+            "toggle": "トグル",
+            "push_to_talk": "プッシュトゥトーク",
+            "toggle_shortcut": "ショートカット",
+            "ptt_shortcut": "プッシュトゥトークキー",
+            "toggle_hint": "一度押すと録音を開始し、もう一度押すと停止します。",
+            "ptt_hint": "キーを押している間は録音し、離すと文字起こしします。",
+        },
+        "startup": {
+            "title": "起動とアップデート",
+        },
         "correction": {
             "title": "修正",
             "enable": "直前のディクテーション取り消しショートカットを有効にする",
