@@ -27,6 +27,8 @@
 3. Press the hotkey again to stop
 4. Your speech is transcribed locally and pasted into the active text field
 
+Prefer hold-to-talk? Switch to **push-to-talk** mode in Settings and just hold a key — even a single modifier like Right `⌘` — while you speak, then release to transcribe.
+
 Everything runs on-device using [MLX](https://github.com/ml-explore/mlx). No audio leaves your Mac.
 The default model also brings strong multilingual ASR support, so supported languages such as Korean, English, Japanese, Chinese, Cantonese, French, German, and Spanish work out of the box.
 
@@ -35,6 +37,7 @@ The default model also brings strong multilingual ASR support, so supported lang
 - **On-device transcription** — Qwen3-ASR running via mlx-audio, no cloud API needed
 - **Multilingual-ready** — the default Qwen3-ASR model supports language identification and transcription across 30 languages and 22 Chinese dialects, and vvrite does not lock transcription to a single language
 - **Global hotkey** — trigger from any app, configurable in Settings
+- **Two recording modes** — *toggle* (press to start/stop) or *push-to-talk* (hold to talk, even a single modifier like Right `⌘`), each with its own hotkey
 - **Menu bar app** — lives quietly in your status bar
 - **Recording overlay** — visual feedback with audio level bars and timer
 - **ESC to cancel** — press Escape during recording to dismiss without transcribing
@@ -91,8 +94,10 @@ For release publishing, set `SPARKLE_GENERATE_APPCAST=1` to copy the final DMG i
 
 | Action | Shortcut |
 |---|---|
-| Start / stop recording | `Option + Space` (configurable) |
+| Start / stop recording (toggle mode) | `Option + Space` (configurable) |
+| Hold to talk (push-to-talk mode) | hold `Right ⌘` (configurable) |
 | Cancel recording | `Escape` |
+| Switch recording mode | Settings → General → Recording Mode |
 | Open settings | Click menu bar icon → Settings |
 
 On first launch, the onboarding wizard will guide you through:

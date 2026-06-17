@@ -27,6 +27,8 @@
 3. Drücken Sie die Tastenkombination erneut, um die Aufnahme zu beenden
 4. Ihre Sprache wird lokal transkribiert und in das aktive Textfeld eingefügt
 
+Lieber gedrückt halten? Wechseln Sie in den Einstellungen in den **Push-to-Talk**-Modus und halten Sie einfach eine Taste gedrückt — sogar eine einzelne Modifikatortaste wie die rechte `⌘` — während Sie sprechen, und lassen Sie sie zum Transkribieren los.
+
 Alles läuft auf dem Gerät mit [MLX](https://github.com/ml-explore/mlx). Kein Audio verlässt Ihren Mac.
 Das Standardmodell bietet zudem eine starke mehrsprachige Spracherkennungsunterstützung, sodass unterstützte Sprachen wie Koreanisch, Englisch, Japanisch, Chinesisch, Kantonesisch, Französisch, Deutsch und Spanisch sofort einsatzbereit sind.
 
@@ -35,6 +37,7 @@ Das Standardmodell bietet zudem eine starke mehrsprachige Spracherkennungsunters
 - **On-Device-Transkription** — Qwen3-ASR läuft über mlx-audio, keine Cloud-API erforderlich
 - **Mehrsprachig einsatzbereit** — das Standard-Qwen3-ASR-Modell unterstützt Sprachidentifikation und Transkription in 30 Sprachen und 22 chinesischen Dialekten, und vvrite beschränkt die Transkription nicht auf eine einzelne Sprache
 - **Globale Tastenkombination** — aus jeder App auslösbar, in den Einstellungen konfigurierbar
+- **Zwei Aufnahmemodi** — *Umschalten* (Drücken zum Starten/Stoppen) oder *Push-to-Talk* (gedrückt halten zum Sprechen, sogar eine einzelne Modifikatortaste wie die rechte `⌘`), jeweils mit eigener Tastenkombination
 - **Menüleisten-App** — befindet sich unauffällig in Ihrer Statusleiste
 - **Aufnahme-Overlay** — visuelles Feedback mit Audio-Pegelbalken und Timer
 - **ESC zum Abbrechen** — drücken Sie Escape während der Aufnahme, um ohne Transkription abzubrechen
@@ -86,8 +89,10 @@ open dist/vvrite.dmg
 
 | Aktion | Tastenkürzel |
 |---|---|
-| Aufnahme starten / stoppen | `Option + Space` (konfigurierbar) |
+| Aufnahme starten / stoppen (Umschaltmodus) | `Option + Space` (konfigurierbar) |
+| Gedrückt halten zum Sprechen (Push-to-Talk-Modus) | rechte `⌘` halten (konfigurierbar) |
 | Aufnahme abbrechen | `Escape` |
+| Aufnahmemodus wechseln | Einstellungen → Allgemein → Aufnahmemodus |
 | Einstellungen öffnen | Klick auf das Menüleisten-Symbol → Einstellungen |
 
 Beim ersten Start führt Sie der Einrichtungsassistent durch:

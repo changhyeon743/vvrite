@@ -27,6 +27,8 @@
 3. Appuyez à nouveau sur le raccourci pour arrêter l'enregistrement
 4. Votre voix est transcrite localement et collée dans le champ de texte actif
 
+Vous préférez maintenir une touche pour parler ? Passez en mode **appuyer pour parler** dans les Réglages et maintenez simplement une touche — même un seul modificateur comme le `⌘` droit — pendant que vous parlez, puis relâchez pour transcrire.
+
 Tout s'exécute sur l'appareil grâce à [MLX](https://github.com/ml-explore/mlx). Aucun audio ne quitte votre Mac.
 Le modèle par défaut offre également une prise en charge multilingue robuste de la reconnaissance vocale. Les langues prises en charge comme le coréen, l'anglais, le japonais, le chinois, le cantonais, le français, l'allemand et l'espagnol fonctionnent directement.
 
@@ -35,6 +37,7 @@ Le modèle par défaut offre également une prise en charge multilingue robuste 
 - **Transcription embarquée** — Qwen3-ASR s'exécute via mlx-audio, aucune API cloud nécessaire
 - **Prêt pour le multilingue** — le modèle Qwen3-ASR par défaut prend en charge l'identification linguistique et la transcription dans 30 langues et 22 dialectes chinois, et vvrite ne verrouille pas la transcription sur une seule langue
 - **Raccourci clavier global** — déclenchement depuis n'importe quelle application, configurable dans les Réglages
+- **Deux modes d'enregistrement** — *bascule* (appuyez pour démarrer/arrêter) ou *appuyer pour parler* (maintenez pour parler, même un seul modificateur comme le `⌘` droit), chacun avec son propre raccourci
 - **Application de barre de menus** — se loge discrètement dans votre barre d'état
 - **Fenêtre superposée d'enregistrement** — retour visuel avec barres de niveau audio et minuteur
 - **ESC pour annuler** — appuyez sur Échap pendant l'enregistrement pour annuler sans transcrire
@@ -86,8 +89,10 @@ open dist/vvrite.dmg
 
 | Action | Raccourci |
 |---|---|
-| Démarrer / arrêter l'enregistrement | `Option + Space` (configurable) |
+| Démarrer / arrêter l'enregistrement (mode bascule) | `Option + Space` (configurable) |
+| Maintenir pour parler (mode appuyer pour parler) | maintenir `Right ⌘` (configurable) |
 | Annuler l'enregistrement | `Escape` |
+| Changer de mode d'enregistrement | Réglages → Général → Mode d'enregistrement |
 | Ouvrir les réglages | Clic sur l'icône de la barre de menus → Réglages |
 
 Au premier lancement, l'assistant de configuration vous guidera à travers :

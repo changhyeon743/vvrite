@@ -27,6 +27,8 @@
 3. Presiona la tecla de acceso rápido nuevamente para detener la grabación
 4. Tu voz se transcribe localmente y se pega en el campo de texto activo
 
+¿Prefieres mantener pulsado para hablar? Cambia al modo **pulsar para hablar** en Ajustes y simplemente mantén pulsada una tecla — incluso un solo modificador como `⌘` derecho — mientras hablas, luego suéltala para transcribir.
+
 Todo se ejecuta en el dispositivo usando [MLX](https://github.com/ml-explore/mlx). Ningún audio sale de tu Mac.
 El modelo predeterminado también ofrece un sólido soporte multilingüe de reconocimiento de voz, por lo que idiomas compatibles como coreano, inglés, japonés, chino, cantonés, francés, alemán y español funcionan de inmediato.
 
@@ -35,6 +37,7 @@ El modelo predeterminado también ofrece un sólido soporte multilingüe de reco
 - **Transcripción en el dispositivo** — Qwen3-ASR se ejecuta a través de mlx-audio, sin necesidad de API en la nube
 - **Soporte multilingüe** — el modelo Qwen3-ASR predeterminado soporta identificación de idioma y transcripción en 30 idiomas y 22 dialectos chinos, y vvrite no bloquea la transcripción a un solo idioma
 - **Tecla de acceso rápido global** — se activa desde cualquier app, configurable en Ajustes
+- **Dos modos de grabación** — *alternar* (pulsa para iniciar/detener) o *pulsar para hablar* (mantén pulsado para hablar, incluso un solo modificador como `⌘` derecho), cada uno con su propia tecla de acceso rápido
 - **App de barra de menú** — se ubica discretamente en tu barra de estado
 - **Ventana superpuesta de grabación** — retroalimentación visual con barras de nivel de audio y temporizador
 - **ESC para cancelar** — presiona Escape durante la grabación para cancelar sin transcribir
@@ -86,8 +89,10 @@ open dist/vvrite.dmg
 
 | Acción | Atajo |
 |---|---|
-| Iniciar / detener grabación | `Option + Space` (configurable) |
+| Iniciar / detener grabación (modo alternar) | `Option + Space` (configurable) |
+| Mantener pulsado para hablar (modo pulsar para hablar) | mantén pulsado `Right ⌘` (configurable) |
 | Cancelar grabación | `Escape` |
+| Cambiar modo de grabación | Ajustes → General → Modo de grabación |
 | Abrir ajustes | Clic en el ícono de la barra de menú → Ajustes |
 
 En el primer inicio, el asistente de configuración te guiará a través de:
