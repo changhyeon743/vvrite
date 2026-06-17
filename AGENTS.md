@@ -55,3 +55,41 @@ State machine: Idle → Recording (hotkey down) → Transcribing (hotkey up) →
 - scripts/build.sh: Full pipeline (PyInstaller → codesign → notarize → staple)
 - entitlements.plist: macOS entitlements for hardened runtime
 - Version string: vvrite/__init__.__version__
+
+## Sparkle Updates
+
+vvrite uses Sparkle 2 for direct-distribution macOS updates. Do not reintroduce
+the old GitHub Releases polling updater; manual "Check for Updates" should go
+through `vvrite.updater.SparkleUpdater` and Sparkle's standard UI.
+
+- Sparkle runtime bridge: `vvrite/updater.py`
+- Menu action wiring: `vvrite/main.py` → `checkForUpdates`
+- Settings checkbox wiring: `vvrite/settings.py` → Sparkle's `automaticallyChecksForUpdates`
+- App bundle config: `vvrite.spec` injects `SUFeedURL`, `SUPublicEDKey`,
+  `SUEnableAutomaticChecks`, and `SUScheduledCheckInterval`
+- Sparkle framework cache: `./scripts/prepare_sparkle.sh` downloads
+  `vendor/Sparkle/` (ignored by git)
+
+Release builds require a Sparkle EdDSA public key:
+
+```bash
+./scripts/prepare_sparkle.sh
+vendor/Sparkle/bin/generate_keys --account vvrite
+export SPARKLE_PUBLIC_ED_KEY="..."  # printed SUPublicEDKey
+./scripts/build.sh
+```
+
+`./scripts/build.sh` intentionally fails when `SPARKLE_PUBLIC_ED_KEY` is missing.
+Use `SPARKLE_ENABLED=0` only for local builds that must omit Sparkle.
+Sparkle Keychain signing uses `SPARKLE_KEY_ACCOUNT`, defaulting to `vvrite`;
+use the same account when running `generate_keys`.
+
+To generate update feed artifacts for a release:
+
+```bash
+SPARKLE_GENERATE_APPCAST=1 ./scripts/build.sh
+```
+
+Upload both `dist/sparkle-updates/appcast.xml` and the versioned DMG from the
+same directory to the GitHub release. The default appcast URL is:
+`https://github.com/shaircast/vvrite/releases/latest/download/appcast.xml`

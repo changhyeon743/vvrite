@@ -21,7 +21,6 @@ _TEST_KEYS = [
     "onboarding_completed",
     "custom_words",
     "auto_update_check",
-    "last_update_check",
     "ui_language",
     "asr_language",
 ]
@@ -191,17 +190,6 @@ class TestPreferences(unittest.TestCase):
         prefs = Preferences()
         prefs.auto_update_check = False
         self.assertFalse(prefs.auto_update_check)
-
-    def test_default_last_update_check(self):
-        from vvrite.preferences import Preferences
-        prefs = Preferences()
-        self.assertEqual(prefs.last_update_check, 0.0)
-
-    def test_set_last_update_check(self):
-        from vvrite.preferences import Preferences
-        prefs = Preferences()
-        prefs.last_update_check = 1234567890.0
-        self.assertAlmostEqual(prefs.last_update_check, 1234567890.0)
 
     def test_default_start_volume(self):
         from vvrite.preferences import Preferences

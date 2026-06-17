@@ -76,11 +76,16 @@ python -m vvrite
 
 ```bash
 pip install -r requirements.txt
+./scripts/prepare_sparkle.sh
+vendor/Sparkle/bin/generate_keys --account vvrite
+export SPARKLE_PUBLIC_ED_KEY="..."  # SUPublicEDKey from generate_keys
 ./scripts/build.sh
 open dist/vvrite.dmg
 ```
 
-`./scripts/build.sh` is the supported build path. It performs the PyInstaller build, code signing, notarization, stapling, and DMG creation. It requires a configured Apple Developer signing identity and `notarytool` profile.
+`./scripts/build.sh` is the supported build path. It performs the PyInstaller build, Sparkle framework embedding, code signing, notarization, stapling, and DMG creation. It requires a configured Apple Developer signing identity, `notarytool` profile, and Sparkle EdDSA public key.
+
+For release publishing, set `SPARKLE_GENERATE_APPCAST=1` to copy the final DMG into `dist/sparkle-updates/` and generate `appcast.xml`. The build script signs appcasts with the Keychain item from `SPARKLE_KEY_ACCOUNT` (`vvrite` by default). Upload both `appcast.xml` and the versioned DMG to the GitHub release; the default appcast URL is `https://github.com/shaircast/vvrite/releases/latest/download/appcast.xml`.
 
 ## Usage
 

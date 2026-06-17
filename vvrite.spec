@@ -11,6 +11,31 @@ from vvrite import APP_BUNDLE_IDENTIFIER
 
 block_cipher = None
 
+SPARKLE_APPCAST_URL = os.environ.get(
+    "SPARKLE_APPCAST_URL",
+    "https://github.com/shaircast/vvrite/releases/latest/download/appcast.xml",
+)
+SPARKLE_PUBLIC_ED_KEY = os.environ.get("SPARKLE_PUBLIC_ED_KEY", "").strip()
+
+info_plist = {
+    "CFBundleName": "vvrite",
+    "CFBundleShortVersionString": "1.0.6",  # keep in sync with vvrite/__init__.__version__
+    "CFBundleVersion": "6",
+    "LSUIElement": True,
+    "NSMicrophoneUsageDescription": (
+        "vvrite needs microphone access to record and transcribe your speech."
+    ),
+    "NSHighResolutionCapable": True,
+    "NSSupportsAutomaticTermination": False,
+    "NSSupportsSuddenTermination": False,
+    "SUFeedURL": SPARKLE_APPCAST_URL,
+    "SUEnableAutomaticChecks": True,
+    "SUScheduledCheckInterval": 86400,
+}
+
+if SPARKLE_PUBLIC_ED_KEY:
+    info_plist["SUPublicEDKey"] = SPARKLE_PUBLIC_ED_KEY
+
 site_packages = os.path.join(
     os.path.dirname(os.__file__), "site-packages"
 )
@@ -117,16 +142,5 @@ app = BUNDLE(
     name="vvrite.app",
     icon="assets/vvrite.icns",
     bundle_identifier=APP_BUNDLE_IDENTIFIER,
-    info_plist={
-        "CFBundleName": "vvrite",
-        "CFBundleShortVersionString": "1.0.6",  # keep in sync with vvrite/__init__.__version__
-        "CFBundleVersion": "6",
-        "LSUIElement": True,
-        "NSMicrophoneUsageDescription": (
-            "vvrite needs microphone access to record and transcribe your speech."
-        ),
-        "NSHighResolutionCapable": True,
-        "NSSupportsAutomaticTermination": False,
-        "NSSupportsSuddenTermination": False,
-    },
+    info_plist=info_plist,
 )

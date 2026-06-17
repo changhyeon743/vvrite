@@ -76,11 +76,16 @@ python -m vvrite
 
 ```bash
 pip install -r requirements.txt
+./scripts/prepare_sparkle.sh
+vendor/Sparkle/bin/generate_keys --account vvrite
+export SPARKLE_PUBLIC_ED_KEY="..."  # generate_keys가 출력한 SUPublicEDKey
 ./scripts/build.sh
 open dist/vvrite.dmg
 ```
 
-`./scripts/build.sh`가 지원되는 빌드 방법입니다. PyInstaller 빌드, 코드 서명, 공증, 스테이플링, DMG 생성을 수행합니다. 설정된 Apple Developer 서명 인증서와 `notarytool` 프로파일이 필요합니다.
+`./scripts/build.sh`가 지원되는 빌드 방법입니다. PyInstaller 빌드, Sparkle framework 포함, 코드 서명, 공증, 스테이플링, DMG 생성을 수행합니다. 설정된 Apple Developer 서명 인증서, `notarytool` 프로파일, Sparkle EdDSA 공개키가 필요합니다.
+
+릴리스 배포 시 `SPARKLE_GENERATE_APPCAST=1`을 설정하면 최종 DMG를 `dist/sparkle-updates/`로 복사하고 `appcast.xml`을 생성합니다. build script는 `SPARKLE_KEY_ACCOUNT`의 Keychain 항목으로 appcast에 서명하며 기본값은 `vvrite`입니다. GitHub Release에는 `appcast.xml`과 버전이 붙은 DMG를 함께 업로드하세요. 기본 appcast URL은 `https://github.com/shaircast/vvrite/releases/latest/download/appcast.xml`입니다.
 
 ## 사용법
 

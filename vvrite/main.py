@@ -2,7 +2,6 @@
 
 import os
 import sys
-import time
 import threading
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -21,7 +20,7 @@ from AppKit import NSTimer
 from Foundation import NSLog, NSURL
 import ApplicationServices
 
-from vvrite import __version__, APP_BUNDLE_IDENTIFIER
+from vvrite import APP_BUNDLE_IDENTIFIER
 from vvrite.locales import t
 from vvrite.preferences import Preferences
 from vvrite.status_bar import StatusBarController
@@ -48,7 +47,7 @@ class AppDelegate(NSObject):
         self._settings_wc = None
         self._load_retries = 0
         self._onboarding_wc = None
-        self._available_update = None  # (tag, release) tuple when update found
+        self._updater = updater.SparkleUpdater()
         self._last_dictation_text = None
         return self
 
@@ -62,6 +61,7 @@ class AppDelegate(NSObject):
 
         self._status_bar = StatusBarController.alloc().initWithDelegate_(self)
         self._overlay = OverlayController.alloc().init()
+        self._updater.start()
 
         if not self._prefs.onboarding_completed or not transcriber.is_model_cached(self._prefs.model_id):
             self._prefs.onboarding_completed = False
@@ -82,7 +82,6 @@ class AppDelegate(NSObject):
         self._hotkey = HotkeyManager(self)
         self._status_bar.setStatus_("ready")
         NSLog("vvrite ready.")
-        self._maybe_check_for_updates()
 
     def _check_permissions(self):
         """Check all permissions and prompt user step by step."""
@@ -186,7 +185,6 @@ class AppDelegate(NSObject):
         self._hotkey = HotkeyManager(self)
         self._status_bar.setStatus_("ready")
         NSLog("vvrite ready.")
-        self._maybe_check_for_updates()
 
     def toggleRecording(self):
         with self._lock:
@@ -335,83 +333,19 @@ class AppDelegate(NSObject):
 
     # --- Update check ---
 
-    def _maybe_check_for_updates(self):
-        """Auto-check for updates if enabled and cooldown has passed."""
-        if not self._prefs.auto_update_check:
-            return
-        if not updater.should_check(self._prefs.last_update_check):
-            return
-        threading.Thread(target=self._check_for_updates, daemon=True).start()
-
-    def _check_for_updates(self):
-        """Background: fetch latest release and compare versions."""
-        self._prefs.last_update_check = time.time()
-        release = updater.fetch_latest_release()
-        if release is None:
-            return
-        tag = release.get("tag_name", "")
-        if updater.is_newer(tag, __version__):
-            self._available_update = (tag, release)
-            self.performSelectorOnMainThread_withObject_waitUntilDone_(
-                "updateCheckComplete:", tag, False
-            )
-
-    def _check_for_updates_manual(self):
-        """Background: manual check (no cooldown), shows 'up to date' if none."""
-        self._prefs.last_update_check = time.time()
-        release = updater.fetch_latest_release()
-        if release and updater.is_newer(release.get("tag_name", ""), __version__):
-            tag = release["tag_name"]
-            self._available_update = (tag, release)
-            self.performSelectorOnMainThread_withObject_waitUntilDone_(
-                "updateCheckComplete:", tag, False
-            )
-        else:
-            self.performSelectorOnMainThread_withObject_waitUntilDone_(
-                "showUpToDate:", None, False
-            )
-
-    @objc.typedSelector(b"v@:@")
-    def updateCheckComplete_(self, tag):
-        """Main thread: update menu and show alert."""
-        self._status_bar.setUpdateAvailable_(str(tag))
-        self._show_update_alert()
-
-    @objc.typedSelector(b"v@:@")
-    def showUpToDate_(self, _):
-        alert = NSAlert.alloc().init()
-        alert.setMessageText_(t("alerts.no_updates.title"))
-        alert.setInformativeText_(t("alerts.no_updates.message", version=__version__))
-        alert.addButtonWithTitle_(t("common.ok"))
-        alert.runModal()
-
     def checkForUpdates(self):
         """Called from menu bar item click."""
-        if self._available_update:
-            self._show_update_alert()
-        else:
-            threading.Thread(target=self._check_for_updates_manual, daemon=True).start()
+        if not self._updater.check_for_updates():
+            self._open_external_url(updater.REPOSITORY_RELEASES_URL)
 
-    def _show_update_alert(self):
-        if not self._available_update:
-            return
-        tag, release = self._available_update
-        body = release.get("body", "") or ""
-        # Truncate long release notes
-        if len(body) > 500:
-            body = body[:500] + "..."
+    def autoUpdateCheckEnabled(self) -> bool | None:
+        """Return Sparkle's automatic-check setting if Sparkle is available."""
+        return self._updater.automatically_checks_for_updates()
 
-        alert = NSAlert.alloc().init()
-        alert.setMessageText_(t("alerts.update_available.title", version=tag))
-        info = t("alerts.update_available.message", current_version=__version__)
-        if body:
-            info += f"\n\n{body}"
-        alert.setInformativeText_(info)
-        alert.addButtonWithTitle_(t("common.download"))
-        alert.addButtonWithTitle_(t("common.later"))
-        response = alert.runModal()
-        if response == NSAlertFirstButtonReturn:
-            self._open_external_url(updater.release_page_url(release))
+    def setAutoUpdateCheckEnabled(self, enabled: bool):
+        """Persist automatic-check setting through Sparkle, with source fallback."""
+        if not self._updater.set_automatically_checks_for_updates(enabled):
+            self._prefs.auto_update_check = enabled
 
     def _open_external_url(self, url: str) -> bool:
         if not url:

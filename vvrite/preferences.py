@@ -29,7 +29,6 @@ _DEFAULTS = {
     "onboarding_completed": False,
     "custom_words": "",
     "auto_update_check": True,
-    "last_update_check": 0.0,
     "asr_language": "auto",
 }
 
@@ -237,14 +236,6 @@ class Preferences:
     @auto_update_check.setter
     def auto_update_check(self, value: bool):
         self._set("auto_update_check", value)
-
-    @property
-    def last_update_check(self) -> float:
-        return float(self._get("last_update_check"))
-
-    @last_update_check.setter
-    def last_update_check(self, value: float):
-        self._set("last_update_check", value)
 
     @property
     def ui_language(self) -> str | None:

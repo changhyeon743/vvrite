@@ -403,7 +403,7 @@ class SettingsWindowController(NSObject):
         self._update_checkbox = NSButton.alloc().initWithFrame_(NSMakeRect(20, y, 360, 20))
         self._update_checkbox.setButtonType_(NSButtonTypeSwitch)
         self._update_checkbox.setTitle_(t("settings.update.title"))
-        self._update_checkbox.setState_(1 if self._prefs.auto_update_check else 0)
+        self._update_checkbox.setState_(1 if self._auto_update_check_enabled() else 0)
         self._update_checkbox.setTarget_(self)
         self._update_checkbox.setAction_("updateCheckToggled:")
         content.addSubview_(self._update_checkbox)
@@ -576,7 +576,20 @@ class SettingsWindowController(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def updateCheckToggled_(self, sender):
-        self._prefs.auto_update_check = sender.state() == 1
+        enabled = sender.state() == 1
+        delegate = NSApp.delegate()
+        if hasattr(delegate, "setAutoUpdateCheckEnabled"):
+            delegate.setAutoUpdateCheckEnabled(enabled)
+        else:
+            self._prefs.auto_update_check = enabled
+
+    def _auto_update_check_enabled(self) -> bool:
+        delegate = NSApp.delegate()
+        if hasattr(delegate, "autoUpdateCheckEnabled"):
+            enabled = delegate.autoUpdateCheckEnabled()
+            if enabled is not None:
+                return bool(enabled)
+        return bool(self._prefs.auto_update_check)
 
     def controlTextDidEndEditing_(self, notification):
         field = notification.object()

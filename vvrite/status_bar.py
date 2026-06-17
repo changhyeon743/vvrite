@@ -126,10 +126,6 @@ class StatusBarController(NSObject):
         else:
             button.setTitle_(f"{percent}%")
 
-    def setUpdateAvailable_(self, version: str):
-        """Update menu item text when an update is available."""
-        self._update_item.setTitle_(t("menu.update_available", version=version))
-
     def setHotkeyDisplay_(self, hotkey_str: str):
         self._hotkey_item.setTitle_(t("menu.hotkey", hotkey=hotkey_str))
 
