@@ -3,7 +3,6 @@
 from Foundation import NSBundle, NSProcessInfo, NSUserDefaults
 from Quartz import (
     kCGEventFlagMaskAlternate,
-    kCGEventFlagMaskControl,
     kCGEventFlagMaskShift,
 )
 

@@ -119,7 +119,6 @@ strings = {
         "microphone": "Микрофон: {microphone}",
         "settings": "Настройки...",
         "check_updates": "Проверить обновления...",
-        "update_available": "Доступно обновление ({version})",
         "quit": "Завершить vvrite",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "Ошибка загрузки модели",
-        },
-        "no_updates": {
-            "title": "Обновлений нет",
-            "message": "vvrite {version} — последняя версия.",
-        },
-        "update_available": {
-            "title": "Доступна версия vvrite {version}",
-            "message": "Вы используете версию {current_version}.",
         },
     },
     "overlay": {

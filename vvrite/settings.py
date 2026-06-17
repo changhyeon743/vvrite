@@ -35,7 +35,6 @@ from vvrite.audio_devices import (
     resolve_input_device,
 )
 from vvrite.locales import t, SUPPORTED_LANGUAGES
-from vvrite.preferences import Preferences
 from vvrite.widgets import ShortcutField, format_shortcut
 
 

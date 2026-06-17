@@ -30,7 +30,7 @@ from AppKit import (
     NSUserInterfaceLayoutOrientationVertical,
     NSWorkspace,
 )
-from Foundation import NSLog, NSURL, NSTimer
+from Foundation import NSURL, NSTimer
 
 from vvrite.locales import t, set_locale, SUPPORTED_LANGUAGES
 from vvrite.widgets import ShortcutField
@@ -735,6 +735,7 @@ class OnboardingWindowController(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def modelLoadComplete_(self, _):
+        self._load_retries = 0
         self._progress_bar.setIndeterminate_(False)
         self._progress_bar.stopAnimation_(None)
         self._progress_bar.setDoubleValue_(100.0)

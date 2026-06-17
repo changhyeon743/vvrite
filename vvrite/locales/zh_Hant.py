@@ -119,7 +119,6 @@ strings = {
         "microphone": "麥克風：{microphone}",
         "settings": "設定...",
         "check_updates": "檢查更新...",
-        "update_available": "有可用更新 ({version})",
         "quit": "結束 vvrite",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "模型載入失敗",
-        },
-        "no_updates": {
-            "title": "沒有可用更新",
-            "message": "vvrite {version} 已是最新版本。",
-        },
-        "update_available": {
-            "title": "vvrite {version} 可用",
-            "message": "您目前正在執行 {current_version}。",
         },
     },
     "overlay": {

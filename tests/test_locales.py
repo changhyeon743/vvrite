@@ -244,7 +244,7 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
 
         expected = [
             "hotkey", "microphone", "settings", "check_updates",
-            "update_available", "quit",
+            "quit",
         ]
         for key in expected:
             self.assertIn(key, strings["menu"], f"Missing menu.{key}")
@@ -263,14 +263,6 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
         # model_failed
         self.assertIn("model_failed", a)
         self.assertIn("title", a["model_failed"])
-        # no_updates
-        self.assertIn("no_updates", a)
-        for key in ["title", "message"]:
-            self.assertIn(key, a["no_updates"], f"Missing alerts.no_updates.{key}")
-        # update_available
-        self.assertIn("update_available", a)
-        for key in ["title", "message"]:
-            self.assertIn(key, a["update_available"], f"Missing alerts.update_available.{key}")
 
     def test_overlay_keys(self):
         from vvrite.locales.en import strings

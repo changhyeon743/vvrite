@@ -119,7 +119,6 @@ strings = {
         "microphone": "마이크: {microphone}",
         "settings": "설정...",
         "check_updates": "업데이트 확인...",
-        "update_available": "업데이트 사용 가능 ({version})",
         "quit": "vvrite 종료",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "모델 로딩 실패",
-        },
-        "no_updates": {
-            "title": "사용 가능한 업데이트 없음",
-            "message": "vvrite {version}이 최신 버전입니다.",
-        },
-        "update_available": {
-            "title": "vvrite {version}을 사용할 수 있습니다",
-            "message": "현재 {current_version}을 실행 중입니다.",
         },
     },
     "overlay": {

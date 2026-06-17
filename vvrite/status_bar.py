@@ -7,9 +7,7 @@ from AppKit import (
     NSVariableStatusItemLength,
     NSMenu,
     NSMenuItem,
-    NSApp,
     NSImage,
-    NSColor,
 )
 
 from vvrite.locales import t

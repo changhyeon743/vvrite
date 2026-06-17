@@ -119,7 +119,6 @@ strings = {
         "microphone": "الميكروفون: {microphone}",
         "settings": "الإعدادات...",
         "check_updates": "التحقق من التحديثات...",
-        "update_available": "تحديث متاح ({version})",
         "quit": "إنهاء vvrite",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "فشل تحميل النموذج",
-        },
-        "no_updates": {
-            "title": "لا توجد تحديثات متاحة",
-            "message": "vvrite {version} هو أحدث إصدار.",
-        },
-        "update_available": {
-            "title": "vvrite {version} متاح",
-            "message": "أنت تستخدم حالياً الإصدار {current_version}.",
         },
     },
     "overlay": {

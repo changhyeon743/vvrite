@@ -182,6 +182,7 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def modelDidLoad_(self, _):
+        self._load_retries = 0
         self._hotkey = HotkeyManager(self)
         self._status_bar.setStatus_("ready")
         NSLog("vvrite ready.")

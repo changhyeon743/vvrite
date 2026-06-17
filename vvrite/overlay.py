@@ -1,7 +1,6 @@
 """Floating overlay panel for recording/transcribing state."""
 
 import os
-import random
 import time
 
 import objc
@@ -25,7 +24,6 @@ from AppKit import (
     NSBackingStoreBuffered,
     NSProgressIndicator,
     NSProgressIndicatorSpinningStyle,
-    NSCenterTextAlignment,
     NSAppearance,
     NSWorkspace,
     NSEvent,

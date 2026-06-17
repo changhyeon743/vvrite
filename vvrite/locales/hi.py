@@ -119,7 +119,6 @@ strings = {
         "microphone": "माइक्रोफ़ोन: {microphone}",
         "settings": "सेटिंग्स...",
         "check_updates": "अपडेट जाँचें...",
-        "update_available": "अपडेट उपलब्ध ({version})",
         "quit": "vvrite बंद करें",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "मॉडल लोडिंग विफल",
-        },
-        "no_updates": {
-            "title": "कोई अपडेट उपलब्ध नहीं",
-            "message": "vvrite {version} नवीनतम संस्करण है।",
-        },
-        "update_available": {
-            "title": "vvrite {version} उपलब्ध है",
-            "message": "आप वर्तमान में {current_version} चला रहे हैं।",
         },
     },
     "overlay": {

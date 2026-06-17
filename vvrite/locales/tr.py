@@ -119,7 +119,6 @@ strings = {
         "microphone": "Mikrofon: {microphone}",
         "settings": "Ayarlar...",
         "check_updates": "Güncellemeleri Kontrol Et...",
-        "update_available": "Güncelleme Mevcut ({version})",
         "quit": "vvrite'dan Çık",
     },
     "alerts": {
@@ -131,14 +130,6 @@ strings = {
         },
         "model_failed": {
             "title": "Model Yüklenemedi",
-        },
-        "no_updates": {
-            "title": "Güncelleme Yok",
-            "message": "vvrite {version} en son sürümdür.",
-        },
-        "update_available": {
-            "title": "vvrite {version} mevcut",
-            "message": "Şu anda {current_version} çalıştırıyorsunuz.",
         },
     },
     "overlay": {
