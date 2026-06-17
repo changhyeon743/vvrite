@@ -14,7 +14,12 @@ DMG="dist/vvrite.dmg"
 SPARKLE_ENABLED="${SPARKLE_ENABLED:-1}"
 SPARKLE_VENDOR_DIR="${SPARKLE_VENDOR_DIR:-$ROOT_DIR/vendor/Sparkle}"
 SPARKLE_FRAMEWORK="$SPARKLE_VENDOR_DIR/Sparkle.framework"
-SPARKLE_KEY_ACCOUNT="${SPARKLE_KEY_ACCOUNT:-vvrite}"
+SPARKLE_KEY_ACCOUNT="${SPARKLE_KEY_ACCOUNT:-vvrite-shaircast}"
+# Public EdDSA key for the vvrite-shaircast signing key (verify with
+# `vendor/Sparkle/bin/generate_keys --account vvrite-shaircast -p`). Defaulted
+# here so release builds work without exporting it each time; update this if the
+# signing key is ever rotated.
+SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-nOeh/Q16IsXOKE7vczErR7PTe87iwBSZu3AZ0GXw6A4=}"
 
 # ── Step 0: Preflight ───────────────────────────────────────────
 echo "▸ Checking build environment..."

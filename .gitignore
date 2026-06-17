@@ -7,9 +7,6 @@ __pycache__/
 .superpowers/
 vendor/Sparkle/
 
-# Code signing / notarization (contains team identity)
-scripts/build.sh
-
 # Agent guidance docs — kept local only (AGENTS.md is the source; CLAUDE.md symlinks to it)
 AGENTS.md
 CLAUDE.md
