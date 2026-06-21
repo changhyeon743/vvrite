@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "Accessibilité : ✅ Accordé",
             "accessibility_not_granted": "Accessibilité : ❌ Non accordé",
             "microphone_granted": "Microphone : ✅ Accordé",
+            "microphone_not_granted": "Microphone : ❌ Non accordé",
         },
         "login": {
             "title": "Lancer au démarrage",

@@ -41,6 +41,10 @@ class AppDelegate(NSObject):
         self._prefs = Preferences()
         self._recorder = Recorder()
         self._recording = False
+        # True from the moment a recording stops until its transcription+paste
+        # finishes (or errors). Guarded by _lock. Blocks a new recording from
+        # starting mid-transcription, which would corrupt the clipboard swap.
+        self._busy = False
         self._lock = threading.Lock()
         # Push-to-talk: monotonic timestamp of the current hold's start, and the
         # minimum hold duration that counts as a real recording (shorter holds
@@ -195,6 +199,8 @@ class AppDelegate(NSObject):
 
     def toggleRecording(self):
         with self._lock:
+            if self._busy:
+                return
             if not self._recording:
                 self._start_recording()
             else:
@@ -203,6 +209,8 @@ class AppDelegate(NSObject):
     def startRecordingPTT(self):
         """Push-to-talk key pressed: begin recording (idempotent under repeats)."""
         with self._lock:
+            if self._busy:
+                return
             if not self._recording:
                 self._ptt_start_ts = time.monotonic()
                 self._start_recording()
@@ -258,7 +266,10 @@ class AppDelegate(NSObject):
             )
 
     def _stop_recording(self):
+        # Called with _lock held. Mark busy until transcription+paste completes
+        # so a new recording can't start and race the in-flight clipboard swap.
         self._recording = False
+        self._busy = True
         sounds.play(self._prefs.sound_stop, self._prefs.stop_volume)
 
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
@@ -323,12 +334,16 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def showErrorUI_(self, message):
+        with self._lock:
+            self._busy = False
         self._overlay.showError_(str(message))
         self._status_bar.setStatus_("ready")
         self._status_bar.setRecording_(False)
 
     @objc.typedSelector(b"v@:@")
     def transcriptionComplete_(self, text):
+        with self._lock:
+            self._busy = False
         self._overlay.dismiss()
         self._status_bar.setStatus_("ready")
 
@@ -355,6 +370,8 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def dismissAndResetUI_(self, _):
+        with self._lock:
+            self._busy = False
         self._overlay.dismiss()
         self._status_bar.setStatus_("ready")
         self._status_bar.setRecording_(False)

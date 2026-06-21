@@ -44,7 +44,6 @@ _PREFERENCE_KEYS = tuple(_DEFAULTS.keys()) + ("mic_device", "ui_language")
 SAMPLE_RATE = 16000
 CHANNELS = 1
 CLIPBOARD_RESTORE_DELAY = 0.2
-FFMPEG_ARGS = ["-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le"]
 
 
 class Preferences:
@@ -111,6 +110,11 @@ class Preferences:
             self._defaults.removeObjectForKey_(key)
         else:
             self._defaults.setObject_forKey_(value, key)
+        # Flush to disk immediately. Without this, a value written just before
+        # the process exits (e.g. the last hotkey captured in onboarding before
+        # the window closes) can be lost — NSUserDefaults buffers writes and the
+        # process may terminate before cfprefsd flushes them.
+        self._defaults.synchronize()
 
     @property
     def hotkey_keycode(self) -> int:

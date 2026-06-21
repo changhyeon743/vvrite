@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "Acessibilidade: ✅ Concedido",
             "accessibility_not_granted": "Acessibilidade: ❌ Não concedido",
             "microphone_granted": "Microfone: ✅ Concedido",
+            "microphone_not_granted": "Microfone: ❌ Não concedido",
         },
         "login": {
             "title": "Iniciar no login",

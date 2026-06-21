@@ -9,7 +9,6 @@ from huggingface_hub import model_info, snapshot_download
 from mlx_audio.stt.utils import load_model
 
 from vvrite.preferences import Preferences, SAMPLE_RATE
-from vvrite import audio_utils
 
 
 _model = None
@@ -98,15 +97,17 @@ def _safe_warm_up():
 
 def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
     """
-    Normalize audio via ffmpeg, then transcribe with Qwen3-ASR.
-    Cleans up temp files after processing.
+    Transcribe a recorded WAV with Qwen3-ASR.
+
+    mlx-audio decodes the WAV (miniaudio) and resamples it to 16 kHz mono itself
+    (scipy.signal.resample_poly + downmix), so no external ffmpeg normalization is
+    needed. Cleans up the temp file after processing.
     """
     if prefs is None:
         prefs = Preferences()
 
     from vvrite.locales import ASR_LANGUAGE_MAP
 
-    normalized_path = audio_utils.normalize(raw_wav_path)
     try:
         kwargs = {"max_tokens": prefs.max_tokens}
         custom_words = prefs.custom_words.strip()
@@ -122,13 +123,12 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
                 kwargs["language"] = language_param
 
         result = _model.generate(
-            normalized_path,
+            raw_wav_path,
             **kwargs,
         )
         return result.text.strip()
     finally:
-        for path in (raw_wav_path, normalized_path):
-            try:
-                os.unlink(path)
-            except OSError:
-                pass
+        try:
+            os.unlink(raw_wav_path)
+        except OSError:
+            pass

@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "إمكانية الوصول: ✅ ممنوح",
             "accessibility_not_granted": "إمكانية الوصول: ❌ غير ممنوح",
             "microphone_granted": "الميكروفون: ✅ ممنوح",
+            "microphone_not_granted": "الميكروفون: ❌ غير ممنوح",
         },
         "login": {
             "title": "التشغيل عند تسجيل الدخول",

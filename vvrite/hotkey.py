@@ -19,6 +19,7 @@ from Quartz import (
     kCGEventKeyUp,
     kCGEventFlagsChanged,
     kCGEventTapDisabledByTimeout,
+    kCGEventTapDisabledByUserInput,
     kCGKeyboardEventKeycode,
     kCGEventFlagMaskCommand,
     kCGEventFlagMaskShift,
@@ -88,7 +89,10 @@ class HotkeyManager:
         CGEventTapEnable(self._tap, True)
 
     def _callback(self, proxy, event_type, event, refcon):
-        if event_type == kCGEventTapDisabledByTimeout:
+        # macOS disables the tap on timeout AND on secure input (e.g. a password
+        # field steals the event stream). Re-enable on both, otherwise the global
+        # hotkey silently dies until the app is restarted.
+        if event_type in (kCGEventTapDisabledByTimeout, kCGEventTapDisabledByUserInput):
             if self._tap:
                 CGEventTapEnable(self._tap, True)
             # A key-up may have been dropped while the tap was disabled; drop

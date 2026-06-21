@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "손쉬운 사용: ✅ 허용됨",
             "accessibility_not_granted": "손쉬운 사용: ❌ 허용되지 않음",
             "microphone_granted": "마이크: ✅ 허용됨",
+            "microphone_not_granted": "마이크: ❌ 허용되지 않음",
         },
         "login": {
             "title": "로그인 시 실행",

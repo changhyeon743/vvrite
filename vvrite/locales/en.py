@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "Accessibility: \u2705 Granted",
             "accessibility_not_granted": "Accessibility: \u274c Not Granted",
             "microphone_granted": "Microphone: \u2705 Granted",
+            "microphone_not_granted": "Microphone: \u274c Not Granted",
         },
         "login": {
             "title": "Launch at login",

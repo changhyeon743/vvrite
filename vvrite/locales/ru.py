@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "Универсальный доступ: ✅ Разрешено",
             "accessibility_not_granted": "Универсальный доступ: ❌ Не разрешено",
             "microphone_granted": "Микрофон: ✅ Разрешено",
+            "microphone_not_granted": "Микрофон: ❌ Не разрешено",
         },
         "login": {
             "title": "Запускать при входе в систему",

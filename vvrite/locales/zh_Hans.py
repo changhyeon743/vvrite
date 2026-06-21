@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "辅助功能：✅ 已授权",
             "accessibility_not_granted": "辅助功能：❌ 未授权",
             "microphone_granted": "麦克风：✅ 已授权",
+            "microphone_not_granted": "麦克风：❌ 未授权",
         },
         "login": {
             "title": "登录时启动",

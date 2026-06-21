@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "Erişilebilirlik: ✅ Verildi",
             "accessibility_not_granted": "Erişilebilirlik: ❌ Verilmedi",
             "microphone_granted": "Mikrofon: ✅ Verildi",
+            "microphone_not_granted": "Mikrofon: ❌ Verilmedi",
         },
         "login": {
             "title": "Girişte başlat",

@@ -124,6 +124,7 @@ strings = {
             "accessibility_granted": "輔助使用：✅ 已授權",
             "accessibility_not_granted": "輔助使用：❌ 未授權",
             "microphone_granted": "麥克風：✅ 已授權",
+            "microphone_not_granted": "麥克風：❌ 未授權",
         },
         "login": {
             "title": "登入時啟動",

@@ -2,6 +2,7 @@
 
 import objc
 import ApplicationServices
+import AVFoundation
 import os
 
 from AppKit import (
@@ -612,7 +613,14 @@ class SettingsWindowController(NSObject):
             self._acc_label.setStringValue_(t("settings.permissions.accessibility_granted"))
         else:
             self._acc_label.setStringValue_(t("settings.permissions.accessibility_not_granted"))
-        self._mic_label.setStringValue_(t("settings.permissions.microphone_granted"))
+
+        mic_authorized = AVFoundation.AVCaptureDevice.authorizationStatusForMediaType_(
+            AVFoundation.AVMediaTypeAudio
+        ) == 3  # AVAuthorizationStatusAuthorized
+        if mic_authorized:
+            self._mic_label.setStringValue_(t("settings.permissions.microphone_granted"))
+        else:
+            self._mic_label.setStringValue_(t("settings.permissions.microphone_not_granted"))
 
     def showWindow_(self, sender):
         self._populate_mics()
