@@ -9,6 +9,7 @@ from Quartz import (
     CGEventGetIntegerValueField,
     CGEventGetFlags,
     CGEventTapEnable,
+    CGEventTapIsEnabled,
     CFMachPortCreateRunLoopSource,
     CFRunLoopAddSource,
     CFRunLoopGetCurrent,
@@ -25,7 +26,7 @@ from Quartz import (
     kCGEventFlagMaskShift,
     kCFRunLoopDefaultMode,
 )
-from Foundation import NSLog
+from Foundation import NSLog, NSTimer
 
 from vvrite.preferences import Preferences
 
@@ -63,7 +64,9 @@ class HotkeyManager:
         # Keycode that is currently holding a push-to-talk recording open
         # (None when not in a hold). Single source of truth for an active hold.
         self._ptt_active_keycode = None
+        self._watchdog = None
         self._setup_tap()
+        self._start_watchdog()
 
     def _setup_tap(self):
         self._tap = CGEventTapCreate(
@@ -87,6 +90,30 @@ class HotkeyManager:
         source = CFMachPortCreateRunLoopSource(None, self._tap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopDefaultMode)
         CGEventTapEnable(self._tap, True)
+
+    def _start_watchdog(self):
+        """Re-enable the tap if macOS turned it off without telling us.
+
+        _callback re-enables on the disable *event*, but that only helps when the
+        tap still delivers events. A tap killed under load or by secure input can
+        go silent, and then the hotkey is dead until the app restarts — which is
+        exactly the "push-to-talk randomly stops working" symptom.
+        """
+        if self._watchdog is not None:
+            return
+        self._watchdog = (
+            NSTimer.scheduledTimerWithTimeInterval_repeats_block_(
+                2.0, True, lambda timer: self._check_tap()
+            )
+        )
+
+    def _check_tap(self):
+        if self._tap is None:
+            self._setup_tap()
+            return
+        if not CGEventTapIsEnabled(self._tap):
+            NSLog("vvrite: event tap was disabled — re-enabling")
+            CGEventTapEnable(self._tap, True)
 
     def _callback(self, proxy, event_type, event, refcon):
         # macOS disables the tap on timeout AND on secure input (e.g. a password
