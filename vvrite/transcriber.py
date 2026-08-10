@@ -8,6 +8,7 @@ import soundfile as sf
 from huggingface_hub import model_info, snapshot_download
 from mlx_audio.stt.utils import load_model
 
+from vvrite.logs import log
 from vvrite.preferences import Preferences, SAMPLE_RATE
 
 # ponytail: one shared timeout, no retry. Retry when a flaky link actually shows up.
@@ -83,14 +84,14 @@ def load(prefs: Preferences = None):
     if prefs is None:
         prefs = Preferences()
     if _endpoint(prefs):
-        print(f"Using remote ASR endpoint: {_endpoint(prefs)}")
+        log.info(f"Using remote ASR endpoint: {_endpoint(prefs)}")
         return
     model_id = prefs.model_id
-    print(f"Loading model: {model_id} ...")
+    log.info(f"Loading model: {model_id} ...")
     _model = load_model(model_id)
     _warmed_up = False
     _safe_warm_up()
-    print("Model loaded.")
+    log.info("Model loaded.")
 
 
 def _create_warmup_audio() -> str:
@@ -121,7 +122,7 @@ def _safe_warm_up():
     try:
         warm_up()
     except Exception as e:
-        print(f"Model warm-up skipped: {e}")
+        log.info(f"Model warm-up skipped: {e}")
 
 
 def _correction_prompt(vocab: str, context: str = "", screen_terms: list = None) -> str:
@@ -178,11 +179,14 @@ def _correct(text: str, prefs) -> str:
     if "://" not in endpoint:
         endpoint = f"http://{endpoint}"
 
+    import time
+
     import requests
 
     from vvrite import screen
 
     screen_terms = screen.terms() if prefs.screen_context else []
+    started = time.time()
 
     try:
         resp = requests.post(
@@ -205,9 +209,16 @@ def _correct(text: str, prefs) -> str:
         )
         resp.raise_for_status()
         out = resp.json()["choices"][0]["message"].get("content")
-        return out.strip() if out and out.strip() else text
+        corrected = out.strip() if out and out.strip() else text
+        # Both sides, always: seeing what the corrector was given and what it did
+        # with it is the only way to tell a useless screen capture from a prompt
+        # that ignored a perfectly good one.
+        log.info(f"correct {time.time() - started:.2f}s  {len(screen_terms)} terms")
+        log.info(f"  raw   {text}")
+        log.info(f"  out   {corrected}" if corrected != text else "  out   (unchanged)")
+        return corrected
     except Exception as e:
-        print(f"Correction skipped: {e}")
+        log.info(f"Correction skipped: {e}")
         return text
 
 
@@ -225,7 +236,7 @@ def _transcribe_remote(raw_wav_path, prefs, endpoint, language_map) -> str:
     if asr_lang != "auto":
         language = language_map.get(asr_lang)
         if language is None:
-            print(f"Unknown ASR language code: {asr_lang}, falling back to auto-detect")
+            log.info(f"Unknown ASR language code: {asr_lang}, falling back to auto-detect")
         else:
             data["language"] = language
 
@@ -271,7 +282,7 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
                 raise RuntimeError(
                     f"{e}\nNo local model to fall back to. Recording kept at: {raw_wav_path}"
                 ) from e
-            print(f"Remote ASR failed ({e}), falling back to on-device model.")
+            log.info(f"Remote ASR failed ({e}), falling back to on-device model.")
             if _model is None:
                 load_from_local(snapshot_download(repo_id=prefs.model_id, local_files_only=True))
 
@@ -291,7 +302,7 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
         if asr_lang != "auto":
             language_param = ASR_LANGUAGE_MAP.get(asr_lang)
             if language_param is None:
-                print(f"Unknown ASR language code: {asr_lang}, falling back to auto-detect")
+                log.info(f"Unknown ASR language code: {asr_lang}, falling back to auto-detect")
             else:
                 kwargs["language"] = language_param
 

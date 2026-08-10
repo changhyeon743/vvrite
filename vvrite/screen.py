@@ -16,6 +16,8 @@ import os
 import re
 import threading
 
+from vvrite.logs import log
+
 _TERM_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.\-]{2,}")
 # A plain short word ("use", "next", "main") is ordinary English the recognizer
 # already gets right, and it would eat the term budget. Keep a token only when it
@@ -111,10 +113,15 @@ def capture_async():
     global _thread
 
     def run():
+        import time
+
+        started = time.time()
         try:
             found = _read_terms()
+            log.info(f"screen  {time.time() - started:.2f}s  {len(found)} terms: "
+                     f"{', '.join(found)}")
         except Exception as e:  # missing permission, no window, Vision unavailable
-            print(f"Screen context skipped: {e}")
+            log.info(f"screen  skipped: {e}")
             found = []
         with _lock:
             global _terms
@@ -136,7 +143,7 @@ def terms(timeout: float = 2.0) -> list[str]:
     if thread is not None:
         thread.join(timeout)
         if thread.is_alive():
-            print("Screen context skipped: OCR still running")
+            log.info("Screen context skipped: OCR still running")
             return []
     with _lock:
         return list(_terms)

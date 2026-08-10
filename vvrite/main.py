@@ -29,6 +29,7 @@ from vvrite.hotkey import HotkeyManager
 from vvrite.overlay import OverlayController
 from vvrite.onboarding import OnboardingWindowController
 from vvrite import transcriber, sounds, updater, screen
+from vvrite.logs import setup as setup_logging
 from vvrite.recorder import Recorder
 from vvrite.clipboard import paste_and_restore, retract_text
 
@@ -452,6 +453,8 @@ def main():
     for r in running:
         if r.processIdentifier() != my_pid:
             sys.exit(0)
+
+    setup_logging()
 
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
