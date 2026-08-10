@@ -78,6 +78,7 @@ strings = {
             "general": "일반",
             "audio": "오디오",
             "language": "언어",
+            "model": "모델",
             "system": "시스템",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "모델",
+        },
+        "remote": {
+            "title": "원격 서버",
+            "placeholder": "http://서버주소:8100",
+            "hint": "비워두면 이 맥에서 인식합니다. 연결 실패 시 자동 전환됩니다.",
+            "test": "테스트",
+            "testing": "확인 중…",
+            "ok": "연결됨 · {model}",
+            "fail": "실패: {error}",
+            "not_ready": "서버가 준비되지 않음",
+            "llm_placeholder": "http://서버주소:8000/v1/chat/completions",
+            "llm_hint": "교정용 LLM 주소. 이 맥에서 인식할 때도 적용됩니다.",
+            "not_asr": "ASR 서버가 아닙니다 — 주소를 확인하세요",
+            "correction": "잘못 인식된 단어를 LLM으로 교정",
+            "correction_hint": "인식 후 서버에서 실행됩니다. 전문 용어 정확도가 올라가지만 2초 정도 더 걸립니다.",
         },
         "custom_words": {
             "title": "사용자 지정 단어",

@@ -78,6 +78,7 @@ strings = {
             "general": "Allgemein",
             "audio": "Audio",
             "language": "Sprache",
+            "model": "Modell",
             "system": "System",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "Modell",
+        },
+        "remote": {
+            "title": "Entfernter Server",
+            "placeholder": "http://dein-server:8100",
+            "hint": "Leer = dieser Mac. Fällt auf lokal zurück, wenn nicht erreichbar.",
+            "test": "Testen",
+            "testing": "Prüfen…",
+            "ok": "Verbunden · {model}",
+            "fail": "Fehler: {error}",
+            "not_ready": "Server ist nicht bereit",
+            "llm_placeholder": "http://dein-server:8000/v1/chat/completions",
+            "llm_hint": "LLM-Endpunkt für die Korrektur. Auch bei lokaler Erkennung.",
+            "not_asr": "Kein ASR-Server — Adresse prüfen",
+            "correction": "Falsch erkannte Wörter mit einem LLM korrigieren",
+            "correction_hint": "Läuft nach der Transkription auf dem Server. Genauer bei Fachbegriffen, dauert etwa 2 Sekunden länger.",
         },
         "custom_words": {
             "title": "Benutzerdefinierte Wörter",

@@ -1,6 +1,8 @@
 """Settings window for hotkey, microphone, permissions, and launch at login."""
 
 import objc
+import threading
+
 import ApplicationServices
 import AVFoundation
 import os
@@ -63,12 +65,14 @@ CTRL_W = RIGHT - CTRL_X         # 300
 _TAB_GENERAL = "general"
 _TAB_AUDIO = "audio"
 _TAB_LANGUAGE = "language"
+_TAB_MODEL = "model"
 _TAB_SYSTEM = "system"
-_TAB_IDS = [_TAB_GENERAL, _TAB_AUDIO, _TAB_LANGUAGE, _TAB_SYSTEM]
+_TAB_IDS = [_TAB_GENERAL, _TAB_AUDIO, _TAB_LANGUAGE, _TAB_MODEL, _TAB_SYSTEM]
 _TAB_ICONS = {
     _TAB_GENERAL: "gearshape",
     _TAB_AUDIO: "mic",
     _TAB_LANGUAGE: "globe",
+    _TAB_MODEL: "waveform",
     _TAB_SYSTEM: "lock.shield",
 }
 
@@ -96,6 +100,12 @@ class SettingsWindowController(NSObject):
         self._mic_device_ids = [None]
         self._login_checkbox = None
         self._custom_words_field = None
+        self._stt_endpoint_field = None
+        self._stt_test_btn = None
+        self._stt_hint = None
+        self._stt_correction_checkbox = None
+        self._stt_correction_hint = None
+        self._llm_endpoint_field = None
         self._start_sound_popup = None
         self._stop_sound_popup = None
         self._start_volume_slider = None
@@ -129,6 +139,7 @@ class SettingsWindowController(NSObject):
             _TAB_GENERAL: self._build_general_tab,
             _TAB_AUDIO: self._build_audio_tab,
             _TAB_LANGUAGE: self._build_language_tab,
+            _TAB_MODEL: self._build_model_tab,
             _TAB_SYSTEM: self._build_system_tab,
         }
         for tab_id in _TAB_IDS:
@@ -430,8 +441,10 @@ class SettingsWindowController(NSObject):
         y -= 22
         self._add_hint(content, y, t("settings.custom_words.hint"), x=MARGIN)
 
-        # Model
-        y -= 40
+    def _build_model_tab(self, content):
+        y = CONTENT_H - 36
+
+        # On-device model
         self._add_header(content, y, t("settings.model.title"))
 
         y -= 28
@@ -440,6 +453,65 @@ class SettingsWindowController(NSObject):
         model_label.setTextColor_(NSColor.secondaryLabelColor())
         model_label.setFont_(NSFont.systemFontOfSize_(11.0))
         content.addSubview_(model_label)
+
+        # Remote server (optional — empty means transcribe on this Mac)
+        y -= 44
+        self._add_header(content, y, t("settings.remote.title"))
+
+        y -= 32
+        test_w = 64
+        self._stt_endpoint_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN - test_w - 8, 24)
+        )
+        self._stt_endpoint_field.setStringValue_(self._prefs.stt_endpoint)
+        self._stt_endpoint_field.setPlaceholderString_(t("settings.remote.placeholder"))
+        self._stt_endpoint_field.setDelegate_(self)
+        content.addSubview_(self._stt_endpoint_field)
+
+        # A wrong address fails silently — it just falls back to on-device, which
+        # looks like nothing happened. This is the only way to see it.
+        self._stt_test_btn = NSButton.alloc().initWithFrame_(
+            NSMakeRect(RIGHT - test_w, y, test_w, 24)
+        )
+        self._stt_test_btn.setTitle_(t("settings.remote.test"))
+        self._stt_test_btn.setBezelStyle_(NSBezelStyleRounded)
+        self._stt_test_btn.setTarget_(self)
+        self._stt_test_btn.setAction_("testEndpoint:")
+        content.addSubview_(self._stt_test_btn)
+
+        y -= 22
+        self._stt_hint = self._add_hint(content, y, t("settings.remote.hint"), x=MARGIN)
+
+        y -= 30
+        self._stt_correction_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
+        )
+        self._stt_correction_checkbox.setButtonType_(NSButtonTypeSwitch)
+        self._stt_correction_checkbox.setTitle_(t("settings.remote.correction"))
+        self._stt_correction_checkbox.setTarget_(self)
+        self._stt_correction_checkbox.setAction_("sttCorrectionToggled:")
+        content.addSubview_(self._stt_correction_checkbox)
+
+        y -= 22
+        self._stt_correction_hint = self._add_hint(
+            content, y, t("settings.remote.correction_hint"), x=MARGIN
+        )
+
+        # The corrector is a plain OpenAI-compatible chat endpoint and is entirely
+        # separate from the ASR server above — it works with on-device ASR too.
+        y -= 28
+        self._llm_endpoint_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
+        )
+        self._llm_endpoint_field.setStringValue_(self._prefs.llm_endpoint)
+        self._llm_endpoint_field.setPlaceholderString_(t("settings.remote.llm_placeholder"))
+        self._llm_endpoint_field.setDelegate_(self)
+        content.addSubview_(self._llm_endpoint_field)
+
+        y -= 20
+        self._add_hint(content, y, t("settings.remote.llm_hint"), x=MARGIN)
+
+        self._refresh_remote_controls()
 
     def _build_system_tab(self, content):
         y = CONTENT_H - 36
@@ -636,6 +708,9 @@ class SettingsWindowController(NSObject):
 
     def windowWillClose_(self, notification):
         self._save_custom_words()
+        self._save_stt_endpoint()
+        if self._llm_endpoint_field is not None:
+            self._prefs.llm_endpoint = self._llm_endpoint_field.stringValue().strip()
         if self._permission_timer:
             self._permission_timer.invalidate()
             self._permission_timer = None
@@ -644,6 +719,80 @@ class SettingsWindowController(NSObject):
         if self._custom_words_field is None:
             return
         self._prefs.custom_words = self._custom_words_field.stringValue()
+
+    def _save_stt_endpoint(self):
+        if self._stt_endpoint_field is None:
+            return
+        self._prefs.stt_endpoint = self._stt_endpoint_field.stringValue().strip()
+        self._refresh_remote_controls()
+
+    @objc.typedSelector(b"v@:@")
+    def testEndpoint_(self, sender):
+        self._save_stt_endpoint()
+        url = self._prefs.stt_endpoint.strip()
+        if not url:
+            return
+        self._stt_test_btn.setEnabled_(False)
+        self._set_hint(t("settings.remote.testing"), NSColor.secondaryLabelColor())
+        threading.Thread(target=self._run_endpoint_test, args=(url,), daemon=True).start()
+
+    def _run_endpoint_test(self, url):
+        """Off the main thread — a dead host blocks for the whole timeout."""
+        import requests
+
+        from vvrite.transcriber import _endpoint
+
+        try:
+            # Normalise exactly as transcription does, so the test cannot pass
+            # against a different URL than the one dictation will use.
+            resp = requests.get(f"{_endpoint(self._prefs)}/health", timeout=5)
+            resp.raise_for_status()
+            try:
+                body = resp.json()
+            except ValueError:
+                # A non-JSON /health means this is some other service — most
+                # likely the LLM endpoint pasted into the ASR field.
+                raise ValueError(t("settings.remote.not_asr")) from None
+            if not body.get("ok"):
+                raise ValueError(t("settings.remote.not_ready"))
+            message = t("settings.remote.ok", model=body.get("model", "?"))
+            ok = True
+        except Exception as e:
+            message = t("settings.remote.fail", error=str(e).split("\n")[0][:60])
+            ok = False
+        self.performSelectorOnMainThread_withObject_waitUntilDone_(
+            "endpointTestFinished:", (message, ok), False
+        )
+
+    @objc.typedSelector(b"v@:@")
+    def endpointTestFinished_(self, payload):
+        message, ok = payload
+        self._stt_test_btn.setEnabled_(True)
+        self._set_hint(
+            message,
+            NSColor.systemGreenColor() if ok else NSColor.systemRedColor(),
+        )
+
+    def _set_hint(self, text, color):
+        if self._stt_hint is not None:
+            self._stt_hint.setStringValue_(text)
+            self._stt_hint.setTextColor_(color)
+
+    def _refresh_remote_controls(self):
+        """Correction only applies to a remote server, so grey it out without one."""
+        if self._stt_correction_checkbox is None:
+            return
+        remote = bool(self._prefs.stt_endpoint.strip())
+        self._stt_correction_checkbox.setEnabled_(remote)
+        self._stt_correction_checkbox.setState_(1 if self._prefs.stt_correction else 0)
+        if self._stt_correction_hint is not None:
+            self._stt_correction_hint.setTextColor_(
+                NSColor.secondaryLabelColor() if remote else NSColor.tertiaryLabelColor()
+            )
+
+    @objc.typedSelector(b"v@:@")
+    def sttCorrectionToggled_(self, sender):
+        self._prefs.stt_correction = sender.state() == 1
 
     @objc.typedSelector(b"v@:@")
     def pollPermissions_(self, timer):
@@ -752,6 +901,10 @@ class SettingsWindowController(NSObject):
         field = notification.object()
         if field == self._custom_words_field:
             self._save_custom_words()
+        elif field == self._stt_endpoint_field:
+            self._save_stt_endpoint()
+        elif field == self._llm_endpoint_field:
+            self._prefs.llm_endpoint = self._llm_endpoint_field.stringValue().strip()
 
     @objc.typedSelector(b"v@:@")
     def openAccessibility_(self, sender):

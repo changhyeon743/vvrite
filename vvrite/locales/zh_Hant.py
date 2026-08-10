@@ -78,6 +78,7 @@ strings = {
             "general": "一般",
             "audio": "音訊",
             "language": "語言",
+            "model": "模型",
             "system": "系統",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "模型",
+        },
+        "remote": {
+            "title": "遠端伺服器",
+            "placeholder": "http://伺服器位址:8100",
+            "hint": "留空則在本機轉寫。無法連線時自動回退到本機。",
+            "test": "測試",
+            "testing": "檢查中…",
+            "ok": "已連線 · {model}",
+            "fail": "失敗: {error}",
+            "not_ready": "伺服器未就緒",
+            "llm_placeholder": "http://伺服器:8000/v1/chat/completions",
+            "llm_hint": "用於校正的 LLM 位址。本機轉寫時同樣生效。",
+            "not_asr": "不是 ASR 伺服器 — 請檢查位址",
+            "correction": "使用 LLM 修正辨識錯誤的詞",
+            "correction_hint": "轉寫完成後在伺服器上執行。專業術語更準確，但會多花約 2 秒。",
         },
         "custom_words": {
             "title": "自訂詞彙",

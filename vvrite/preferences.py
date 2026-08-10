@@ -1,5 +1,8 @@
 """User preferences backed by NSUserDefaults."""
 
+import os
+from pathlib import Path
+
 from Foundation import NSBundle, NSProcessInfo, NSUserDefaults
 from Quartz import (
     kCGEventFlagMaskAlternate,
@@ -26,6 +29,20 @@ _DEFAULTS = {
     "retract_hotkey_modifiers": int(kCGEventFlagMaskAlternate | kCGEventFlagMaskShift),
     # mic_device intentionally omitted — None/absent means system default
     "model_id": "mlx-community/Qwen3-ASR-1.7B-8bit",
+    # Empty means on-device transcription. Set to a Qwen3-ASR server base URL
+    # (e.g. "http://asr.local:8100") to transcribe there instead — audio then
+    # leaves this Mac, so it is opt-in and off by default.
+    "stt_endpoint": "",
+    # Post-ASR correction (GER) on the remote server: an LLM fixes obvious
+    # misrecognitions. Costs roughly +2s per dictation. Remote mode only.
+    "stt_correction": False,
+    # OpenAI-compatible chat endpoint used to clean up transcriptions. Works with
+    # on-device ASR too, so the remote ASR server is not required for correction.
+    "llm_endpoint": "",
+    "llm_model": "",
+    # Who is speaking, in one line. Without it the corrector has no domain to
+    # anchor on and leaves jargon mangled — measured, not theoretical.
+    "llm_context": "",
     "max_tokens": 128000,
     "launch_at_login": False,
     "sound_start": "Glass",
@@ -37,6 +54,39 @@ _DEFAULTS = {
     "auto_update_check": True,
     "asr_language": "auto",
 }
+
+
+# Server addresses are personal, not project settings — hard-coding one means a
+# fork carries someone's LAN hostname around forever. These read from .env (which
+# is gitignored) or the environment, and only supply *defaults*: anything set in
+# the Settings window still wins.
+_ENV_KEYS = ("stt_endpoint", "llm_endpoint", "llm_model", "llm_context", "custom_words")
+
+
+_DOTENV = Path(__file__).resolve().parent.parent / ".env"
+
+
+def _apply_env_defaults(defaults: dict, dotenv: Path = _DOTENV):
+    """Overlay VVRITE_* values from .env and the environment onto defaults."""
+    env = {}
+    try:
+        for line in dotenv.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            env[key.strip()] = value.strip().strip("\"'")
+    except OSError:
+        pass  # no .env in a packaged build, or unreadable — the environment still applies
+    env.update(os.environ)
+
+    for key in _ENV_KEYS:
+        value = env.get(f"VVRITE_{key.upper()}")
+        if value:
+            defaults[key] = value
+
+
+_apply_env_defaults(_DEFAULTS)
 
 _PREFERENCE_KEYS = tuple(_DEFAULTS.keys()) + ("mic_device", "ui_language")
 
@@ -198,6 +248,46 @@ class Preferences:
     @model_id.setter
     def model_id(self, value: str):
         self._set("model_id", value)
+
+    @property
+    def stt_endpoint(self) -> str:
+        return str(self._get("stt_endpoint") or "")
+
+    @stt_endpoint.setter
+    def stt_endpoint(self, value: str):
+        self._set("stt_endpoint", value)
+
+    @property
+    def llm_endpoint(self) -> str:
+        return str(self._get("llm_endpoint") or "")
+
+    @llm_endpoint.setter
+    def llm_endpoint(self, value: str):
+        self._set("llm_endpoint", value)
+
+    @property
+    def llm_context(self) -> str:
+        return str(self._get("llm_context") or "")
+
+    @llm_context.setter
+    def llm_context(self, value: str):
+        self._set("llm_context", value)
+
+    @property
+    def llm_model(self) -> str:
+        return str(self._get("llm_model"))
+
+    @llm_model.setter
+    def llm_model(self, value: str):
+        self._set("llm_model", value)
+
+    @property
+    def stt_correction(self) -> bool:
+        return bool(self._get("stt_correction"))
+
+    @stt_correction.setter
+    def stt_correction(self, value: bool):
+        self._set("stt_correction", bool(value))
 
     @property
     def max_tokens(self) -> int:

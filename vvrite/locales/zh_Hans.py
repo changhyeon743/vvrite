@@ -78,6 +78,7 @@ strings = {
             "general": "通用",
             "audio": "音频",
             "language": "语言",
+            "model": "模型",
             "system": "系统",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "模型",
+        },
+        "remote": {
+            "title": "远程服务器",
+            "placeholder": "http://服务器地址:8100",
+            "hint": "留空则在本机转写。无法连接时自动回退到本机。",
+            "test": "测试",
+            "testing": "检查中…",
+            "ok": "已连接 · {model}",
+            "fail": "失败: {error}",
+            "not_ready": "服务器未就绪",
+            "llm_placeholder": "http://服务器:8000/v1/chat/completions",
+            "llm_hint": "用于纠错的 LLM 地址。本机转写时同样生效。",
+            "not_asr": "不是 ASR 服务器 — 请检查地址",
+            "correction": "使用 LLM 修正识别错误的词",
+            "correction_hint": "转写完成后在服务器上运行。专业术语更准确，但会多花约 2 秒。",
         },
         "custom_words": {
             "title": "自定义词汇",

@@ -68,5 +68,196 @@ class TestWarmUp(unittest.TestCase):
         mock_safe_warm_up.assert_called_once_with()
 
 
+class TestRemoteEndpoint(unittest.TestCase):
+    def _prefs(self, **kw):
+        prefs = MagicMock()
+        prefs.stt_endpoint = kw.get("stt_endpoint", "http://asr.local:8100/")
+        prefs.custom_words = kw.get("custom_words", "")
+        prefs.asr_language = kw.get("asr_language", "auto")
+        prefs.stt_correction = kw.get("stt_correction", False)
+        prefs.llm_endpoint = kw.get("llm_endpoint", "")
+        prefs.llm_model = "test-model"
+        return prefs
+
+    @patch("vvrite.transcriber.os.unlink")
+    def test_remote_posts_wav_and_returns_text(self, mock_unlink):
+        from vvrite.transcriber import transcribe
+
+        resp = MagicMock()
+        resp.json.return_value = {"text": "  안녕하세요  "}
+        requests = MagicMock()
+        requests.post.return_value = resp
+
+        with patch.dict("sys.modules", {"requests": requests}), \
+                patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+            text = transcribe("/tmp/rec.wav", self._prefs(custom_words="vvrite", asr_language="ko"))
+
+        self.assertEqual(text, "안녕하세요")
+        url, = requests.post.call_args[0]
+        self.assertEqual(url, "http://asr.local:8100/v1/audio/transcriptions")
+        self.assertEqual(
+            requests.post.call_args[1]["data"],
+            {"prompt": "vvrite", "language": "Korean", "correction": "0"},
+        )
+        mock_unlink.assert_called_once_with("/tmp/rec.wav")
+
+    @patch("vvrite.transcriber.os.unlink")
+    def test_correction_runs_on_the_client_not_the_server(self, mock_unlink):
+        """The server only transcribes; the LLM pass happens here, so the same
+        correction applies whether the audio was handled locally or remotely."""
+        from vvrite.transcriber import transcribe
+
+        asr = MagicMock()
+        asr.json.return_value = {"text": "교정 전"}
+        llm = MagicMock()
+        llm.json.return_value = {"choices": [{"message": {"content": " 교정 후 "}}]}
+        requests = MagicMock()
+        requests.post.side_effect = [asr, llm]
+
+        with patch.dict("sys.modules", {"requests": requests}), \
+                patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+            text = transcribe(
+                "/tmp/rec.wav",
+                self._prefs(stt_correction=True, llm_endpoint="http://llm.local:8000/v1/chat/completions"),
+            )
+
+        self.assertEqual(text, "교정 후")
+        # The ASR request must not ask the server to correct as well.
+        self.assertEqual(requests.post.call_args_list[0][1]["data"]["correction"], "0")
+        self.assertEqual(requests.post.call_args_list[1][0][0],
+                         "http://llm.local:8000/v1/chat/completions")
+
+    @patch("vvrite.transcriber.os.unlink")
+    def test_correction_failure_keeps_the_transcription(self, mock_unlink):
+        """A dead LLM must cost the user nothing — the raw text still comes back."""
+        from vvrite.transcriber import transcribe
+
+        asr = MagicMock()
+        asr.json.return_value = {"text": "원문 유지"}
+        requests = MagicMock()
+        requests.post.side_effect = [asr, OSError("connection refused")]
+
+        with patch.dict("sys.modules", {"requests": requests}), \
+                patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+            text = transcribe(
+                "/tmp/rec.wav",
+                self._prefs(stt_correction=True, llm_endpoint="http://llm.local:8000/v1/chat/completions"),
+            )
+
+        self.assertEqual(text, "원문 유지")
+
+    @patch("vvrite.transcriber.os.unlink")
+    @patch("vvrite.transcriber.snapshot_download", return_value="/fake/model")
+    @patch("vvrite.transcriber.load_from_local")
+    def test_remote_failure_falls_back_to_local_model(self, mock_load, mock_dl, mock_unlink):
+        import vvrite.transcriber as transcriber
+
+        requests = MagicMock()
+        requests.post.side_effect = OSError("connection refused")
+        model = MagicMock()
+        model.generate.return_value = MagicMock(text="  로컬 폴백  ")
+
+        old_model = transcriber._model
+        try:
+            transcriber._model = model
+            with patch.dict("sys.modules", {"requests": requests}), \
+                    patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+                text = transcriber.transcribe("/tmp/rec.wav", self._prefs())
+        finally:
+            transcriber._model = old_model
+
+        self.assertEqual(text, "로컬 폴백")
+        model.generate.assert_called_once()
+        mock_load.assert_not_called()  # already in memory, no reload
+        mock_unlink.assert_called_once_with("/tmp/rec.wav")
+
+    @patch("vvrite.transcriber.os.unlink")
+    @patch("vvrite.transcriber._is_downloaded", return_value=False)
+    def test_remote_failure_without_local_model_keeps_the_recording(self, mock_dl, mock_unlink):
+        import vvrite.transcriber as transcriber
+
+        requests = MagicMock()
+        requests.post.side_effect = OSError("connection refused")
+
+        old_model = transcriber._model
+        try:
+            transcriber._model = None
+            with patch.dict("sys.modules", {"requests": requests}), \
+                    patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+                with self.assertRaises(RuntimeError) as ctx:
+                    transcriber.transcribe("/tmp/rec.wav", self._prefs())
+        finally:
+            transcriber._model = old_model
+
+        self.assertIn("/tmp/rec.wav", str(ctx.exception))
+        mock_unlink.assert_not_called()
+
+    def test_empty_endpoint_means_on_device(self):
+        import vvrite.transcriber as transcriber
+
+        self.assertEqual(transcriber._endpoint(self._prefs(stt_endpoint="  ")), "")
+
+    def test_bare_host_port_gets_an_http_scheme(self):
+        import vvrite.transcriber as transcriber
+
+        ep = transcriber._endpoint
+        self.assertEqual(ep(self._prefs(stt_endpoint="asr.local:8100")), "http://asr.local:8100")
+        self.assertEqual(ep(self._prefs(stt_endpoint="http://asr.local:8100/")), "http://asr.local:8100")
+        self.assertEqual(ep(self._prefs(stt_endpoint="https://x/")), "https://x")
+
+    @patch("vvrite.transcriber._is_downloaded", return_value=False)
+    def test_endpoint_counts_as_ready_without_a_download(self, mock_downloaded):
+        """Onboarding gates its Done button on these two, so a configured server has
+        to satisfy both — otherwise a remote-only user is stuck at the download step."""
+        import vvrite.transcriber as transcriber
+
+        old_model = transcriber._model
+        try:
+            transcriber._model = None
+            with patch("vvrite.transcriber.Preferences", return_value=self._prefs()):
+                self.assertTrue(transcriber.is_model_loaded())
+                self.assertTrue(transcriber.is_model_cached("any/model"))
+            with patch("vvrite.transcriber.Preferences",
+                       return_value=self._prefs(stt_endpoint="")):
+                self.assertFalse(transcriber.is_model_loaded())
+                self.assertFalse(transcriber.is_model_cached("any/model"))
+        finally:
+            transcriber._model = old_model
+
+
+class TestLocalModelNotReady(unittest.TestCase):
+    """A dictation fired before the background load finishes must still work."""
+
+    @patch("vvrite.transcriber.os.unlink")
+    @patch("vvrite.transcriber.snapshot_download", return_value="/fake/model")
+    def test_loads_on_demand_when_model_is_none(self, mock_dl, mock_unlink):
+        import vvrite.transcriber as transcriber
+
+        prefs = MagicMock()
+        prefs.stt_endpoint = ""
+        prefs.stt_correction = False
+        prefs.custom_words = ""
+        prefs.asr_language = "auto"
+        prefs.max_tokens = 128000
+        prefs.model_id = "mlx-community/Qwen3-ASR-1.7B-8bit"
+
+        loaded = MagicMock()
+        loaded.generate.return_value = MagicMock(text=" 늦게 로드됨 ")
+
+        def fake_load(path):
+            transcriber._model = loaded
+
+        old = transcriber._model
+        try:
+            transcriber._model = None
+            with patch("vvrite.transcriber.load_from_local", side_effect=fake_load) as ld:
+                text = transcriber.transcribe("/tmp/rec.wav", prefs)
+            ld.assert_called_once_with("/fake/model")
+        finally:
+            transcriber._model = old
+
+        self.assertEqual(text, "늦게 로드됨")
+
+
 if __name__ == "__main__":
     unittest.main()

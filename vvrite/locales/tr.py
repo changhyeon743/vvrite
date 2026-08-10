@@ -78,6 +78,7 @@ strings = {
             "general": "Genel",
             "audio": "Ses",
             "language": "Dil",
+            "model": "Model",
             "system": "Sistem",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "Model",
+        },
+        "remote": {
+            "title": "Uzak sunucu",
+            "placeholder": "http://sunucu-adresin:8100",
+            "hint": "Boş = bu Mac. Bağlanamazsa cihaza geri döner.",
+            "test": "Test",
+            "testing": "Kontrol ediliyor…",
+            "ok": "Bağlandı · {model}",
+            "fail": "Başarısız: {error}",
+            "not_ready": "Sunucu hazır değil",
+            "llm_placeholder": "http://sunucun:8000/v1/chat/completions",
+            "llm_hint": "Düzeltme için LLM adresi. Cihaz üstü tanımada da çalışır.",
+            "not_asr": "ASR sunucusu değil — adresi kontrol edin",
+            "correction": "Yanlış tanınan kelimeleri LLM ile düzelt",
+            "correction_hint": "Yazıya dökme sonrası sunucuda çalışır. Teknik terimlerde daha doğru, yaklaşık 2 saniye ekler.",
         },
         "custom_words": {
             "title": "Özel Kelimeler",

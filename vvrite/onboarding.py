@@ -89,6 +89,7 @@ class OnboardingWindowController(NSObject):
         self._error_label = None
         self._retry_btn = None
         self._download_btn = None
+        self._remote_field = None
         self._load_retries = 0
         self._local_model_path = None
         self._lang_popup = None
@@ -293,6 +294,13 @@ class OnboardingWindowController(NSObject):
             self._next_btn.setEnabled_(transcriber.is_model_loaded())
         else:
             self._next_btn.setEnabled_(True)
+
+    def controlTextDidChange_(self, notification):
+        # Live, not on end-editing: Done is gated on this value, and requiring a
+        # Tab/Return before the button wakes up reads as the field being broken.
+        if notification.object() == self._remote_field:
+            self._prefs.stt_endpoint = self._remote_field.stringValue().strip()
+            self._update_buttons()
 
     @objc.typedSelector(b"v@:@")
     def backClicked_(self, sender):
@@ -661,7 +669,7 @@ class OnboardingWindowController(NSObject):
 
         # Size label
         self._size_label = NSTextField.labelWithString_(t("onboarding.model.checking_size"))
-        self._size_label.setFrame_(NSMakeRect(_MARGIN, 150, _CONTENT_W, 18))
+        self._size_label.setFrame_(NSMakeRect(_MARGIN, 166, _CONTENT_W, 18))
         self._size_label.setFont_(NSFont.systemFontOfSize_(11.0))
         self._size_label.setTextColor_(NSColor.secondaryLabelColor())
         self._size_label.setAlignment_(1)
@@ -669,7 +677,7 @@ class OnboardingWindowController(NSObject):
 
         # Progress bar (hidden initially)
         self._progress_bar = NSProgressIndicator.alloc().initWithFrame_(
-            NSMakeRect(_MARGIN, 120, _CONTENT_W, 8)
+            NSMakeRect(_MARGIN, 140, _CONTENT_W, 8)
         )
         self._progress_bar.setStyle_(NSProgressIndicatorStyleBar)
         self._progress_bar.setMinValue_(0.0)
@@ -679,7 +687,7 @@ class OnboardingWindowController(NSObject):
 
         # Progress text
         self._progress_label = NSTextField.labelWithString_("")
-        self._progress_label.setFrame_(NSMakeRect(_MARGIN, 98, _CONTENT_W, 18))
+        self._progress_label.setFrame_(NSMakeRect(_MARGIN, 118, _CONTENT_W, 18))
         self._progress_label.setFont_(NSFont.systemFontOfSize_(11.0))
         self._progress_label.setTextColor_(NSColor.secondaryLabelColor())
         self._progress_label.setAlignment_(1)
@@ -688,7 +696,7 @@ class OnboardingWindowController(NSObject):
 
         # Error label (hidden)
         self._error_label = NSTextField.labelWithString_("")
-        self._error_label.setFrame_(NSMakeRect(_MARGIN, 74, _CONTENT_W, 18))
+        self._error_label.setFrame_(NSMakeRect(_MARGIN, 96, _CONTENT_W, 18))
         self._error_label.setFont_(NSFont.systemFontOfSize_(11.0))
         self._error_label.setTextColor_(NSColor.systemRedColor())
         self._error_label.setAlignment_(1)
@@ -697,7 +705,7 @@ class OnboardingWindowController(NSObject):
 
         # Download button
         self._download_btn = NSButton.alloc().initWithFrame_(
-            NSMakeRect((_WIDTH - 120) / 2.0, 18, 120, 32)
+            NSMakeRect((_WIDTH - 120) / 2.0, 56, 120, 32)
         )
         self._download_btn.setTitle_(t("common.download"))
         self._download_btn.setBezelStyle_(NSBezelStyleRounded)
@@ -707,7 +715,7 @@ class OnboardingWindowController(NSObject):
 
         # Retry button (hidden)
         self._retry_btn = NSButton.alloc().initWithFrame_(
-            NSMakeRect((_WIDTH - 90) / 2.0, 18, 90, 32)
+            NSMakeRect((_WIDTH - 90) / 2.0, 56, 90, 32)
         )
         self._retry_btn.setTitle_(t("common.retry"))
         self._retry_btn.setBezelStyle_(NSBezelStyleRounded)
@@ -716,8 +724,26 @@ class OnboardingWindowController(NSObject):
         self._retry_btn.setHidden_(True)
         area.addSubview_(self._retry_btn)
 
+        # Remote server — an alternative to downloading, so someone who already runs
+        # a Qwen3-ASR server is not forced through a multi-GB download to finish setup.
+        remote_label = NSTextField.labelWithString_(t("settings.remote.title"))
+        remote_label.setFrame_(NSMakeRect(_MARGIN, 32, _CONTENT_W, 16))
+        remote_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        remote_label.setTextColor_(NSColor.secondaryLabelColor())
+        remote_label.setAlignment_(1)
+        area.addSubview_(remote_label)
+
+        self._remote_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(_MARGIN, 4, _CONTENT_W, 24)
+        )
+        self._remote_field.setStringValue_(self._prefs.stt_endpoint)
+        self._remote_field.setPlaceholderString_(t("settings.remote.placeholder"))
+        self._remote_field.setFont_(NSFont.systemFontOfSize_(11.0))
+        self._remote_field.setDelegate_(self)
+        area.addSubview_(self._remote_field)
+
         # If the model is already loaded (e.g. navigating back), reflect that.
-        if transcriber.is_model_loaded():
+        if transcriber.is_model_loaded() and not self._prefs.stt_endpoint.strip():
             self._download_btn.setHidden_(True)
             self._progress_label.setHidden_(False)
             self._progress_label.setStringValue_(t("onboarding.model.ready"))

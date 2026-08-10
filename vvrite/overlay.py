@@ -40,8 +40,8 @@ W = 220
 H = 44
 CY = H / 2  # vertical center
 
-# Recording layout: [dot 10] 8 [timer 44] 12 [bars 38]  = 112
-REC_W = 10 + 8 + 44 + 12 + 38  # 112
+# Recording layout: [dot 10] 8 [timer 44] 12 [bars 38] 10 [link 8] = 130
+REC_W = 10 + 8 + 44 + 12 + 38 + 10 + 8  # 130
 REC_X0 = (W - REC_W) / 2  # left edge of centered group
 
 # Transcribing layout: [spinner 16] 8 [label ~100]
@@ -143,6 +143,18 @@ class OverlayController(NSObject):
             bar.layer().setBackgroundColor_(NSColor.redColor().CGColor())
             self._level_bars.append(bar)
             self._panel.contentView().addSubview_(bar)
+        x += 8 * bar_spacing + 10
+
+        # Remote indicator. A silent fallback to the on-device model used to be
+        # invisible — you only noticed via latency or a worse transcript.
+        link_size = 8
+        self._remote_dot = NSView.alloc().initWithFrame_(
+            NSMakeRect(x, CY - link_size / 2, link_size, link_size)
+        )
+        self._remote_dot.setWantsLayer_(True)
+        self._remote_dot.layer().setCornerRadius_(link_size / 2)
+        self._remote_dot.setHidden_(True)
+        self._panel.contentView().addSubview_(self._remote_dot)
 
         # --- Transcribing/error elements (centered as a group) ---
         tx = TRANS_X0
@@ -265,8 +277,17 @@ class OverlayController(NSObject):
         self._timer_label.setHidden_(not show)
         for bar in self._level_bars:
             bar.setHidden_(not show)
+        if not show:
+            self._remote_dot.setHidden_(True)
 
     def showRecording(self):
+        from vvrite.preferences import Preferences
+
+        remote = bool(Preferences().stt_endpoint.strip())
+        self._remote_dot.setHidden_(not remote)
+        self._remote_dot.layer().setBackgroundColor_(
+            NSColor.colorWithRed_green_blue_alpha_(0.35, 0.78, 0.98, 1.0).CGColor()
+        )
         self._record_start_time = time.time()
         self._tick_count = 0
         self._current_level = 0.0

@@ -78,6 +78,7 @@ strings = {
             "general": "一般",
             "audio": "オーディオ",
             "language": "言語",
+            "model": "モデル",
             "system": "システム",
         },
         "recording": {
@@ -103,6 +104,21 @@ strings = {
         },
         "model": {
             "title": "モデル",
+        },
+        "remote": {
+            "title": "リモートサーバー",
+            "placeholder": "http://サーバーアドレス:8100",
+            "hint": "空欄ならこのMacで認識します。接続できない場合は自動で切り替わります。",
+            "test": "テスト",
+            "testing": "確認中…",
+            "ok": "接続済み · {model}",
+            "fail": "失敗: {error}",
+            "not_ready": "サーバーが準備できていません",
+            "llm_placeholder": "http://サーバー:8000/v1/chat/completions",
+            "llm_hint": "補正用LLMのアドレス。端末側の認識でも適用されます。",
+            "not_asr": "ASRサーバーではありません — アドレスを確認してください",
+            "correction": "誤認識された単語をLLMで修正",
+            "correction_hint": "認識後にサーバー上で実行されます。専門用語の精度が上がりますが、約2秒長くかかります。",
         },
         "custom_words": {
             "title": "カスタムワード",
