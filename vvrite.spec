@@ -17,6 +17,17 @@ SPARKLE_APPCAST_URL = os.environ.get(
 )
 SPARKLE_PUBLIC_ED_KEY = os.environ.get("SPARKLE_PUBLIC_ED_KEY", "").strip()
 
+# Bake .env into the bundle so a fresh install already knows your endpoints.
+# It ships INSIDE the .app, so anyone you hand the build to can read it — hence the
+# loud notice and the opt-out. Release builds run from a clean checkout, where the
+# file is gitignored and therefore absent.
+BAKE_ENV = os.environ.get("VVRITE_BAKE_ENV", "1") != "0"
+env_datas = []
+if BAKE_ENV and os.path.exists(os.path.join(ROOT_DIR, ".env")):
+    env_datas.append((os.path.join(ROOT_DIR, ".env"), "."))
+    print("\n▸ Baking .env into the bundle — do not distribute this build.")
+    print("  Set VVRITE_BAKE_ENV=0 to build without it.\n")
+
 info_plist = {
     "CFBundleName": "vvrite",
     "CFBundleShortVersionString": __version__,  # sourced from vvrite/__init__.__version__
@@ -67,7 +78,7 @@ a = Analysis(
         (os.path.join(site_packages, "_soundfile_data"), "_soundfile_data"),
         # MLX Metal shaders and native libs
         (os.path.join(site_packages, "mlx", "lib"), os.path.join("mlx", "lib")),
-    ],
+    ] + env_datas,
     hiddenimports=pyobjc_hiddenimports + [
         # Locale modules (dynamically imported by vvrite.locales)
         *collect_submodules("vvrite.locales"),

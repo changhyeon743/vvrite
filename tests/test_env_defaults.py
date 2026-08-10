@@ -31,5 +31,27 @@ class TestEnvDefaults(unittest.TestCase):
         self.assertEqual(d["llm_endpoint"], "")
 
 
+class TestBakedEnvStamp(unittest.TestCase):
+    """The stamp decides whether baked values overwrite saved settings."""
+
+    def test_stamp_is_stable_across_processes(self):
+        """A per-process stamp would rewrite the settings on every launch, wiping
+        whatever the user changed in the window."""
+        import subprocess
+        import sys
+
+        code = (
+            "import hashlib;"
+            "print(hashlib.sha1(repr(sorted({'llm_model': 'm'}.items()))"
+            ".encode('utf-8')).hexdigest())"
+        )
+        runs = {
+            subprocess.run([sys.executable, "-c", code], capture_output=True,
+                           text=True, env={"PYTHONHASHSEED": seed}).stdout.strip()
+            for seed in ("0", "1", "random")
+        }
+        self.assertEqual(len(runs), 1, "stamp must not depend on PYTHONHASHSEED")
+
+
 if __name__ == "__main__":
     unittest.main()

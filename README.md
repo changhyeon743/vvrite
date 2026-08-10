@@ -92,9 +92,17 @@ VVRITE_LLM_MODEL=your-model-name
 VVRITE_LLM_CONTEXT=Software developer. Korean and English only.
 ```
 
-These only supply *defaults* — anything set in the Settings window wins. Environment
-variables override the file. Recognised keys: `VVRITE_STT_ENDPOINT`,
-`VVRITE_LLM_ENDPOINT`, `VVRITE_LLM_MODEL`, `VVRITE_LLM_CONTEXT`, `VVRITE_CUSTOM_WORDS`.
+Recognised keys: `VVRITE_STT_ENDPOINT`, `VVRITE_LLM_ENDPOINT`, `VVRITE_LLM_MODEL`,
+`VVRITE_LLM_CONTEXT`, `VVRITE_CUSTOM_WORDS`. Environment variables override the file.
+
+`.env` is also **baked into the .app** at build time, so a fresh install already knows
+your endpoints instead of making you retype them. The values are written through to the
+saved settings once per change, so edits in the Settings window stick until you change
+`.env` and rebuild.
+
+Because the file ships inside the bundle, anyone you hand that build to can read it —
+the build prints a warning when it happens. Set `VVRITE_BAKE_ENV=0` to build without it.
+Release builds run from a clean checkout, where `.env` is gitignored and absent.
 
 ### Local build script
 

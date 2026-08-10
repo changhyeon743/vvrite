@@ -1,6 +1,8 @@
 """User preferences backed by NSUserDefaults."""
 
+import hashlib
 import os
+import sys
 from pathlib import Path
 
 from Foundation import NSBundle, NSProcessInfo, NSUserDefaults
@@ -66,11 +68,21 @@ _DEFAULTS = {
 _ENV_KEYS = ("stt_endpoint", "llm_endpoint", "llm_model", "llm_context", "custom_words")
 
 
-_DOTENV = Path(__file__).resolve().parent.parent / ".env"
+def _dotenv_path() -> Path:
+    """Where .env lives: next to the source in a checkout, inside the bundle once
+    frozen. PyInstaller unpacks datas to sys._MEIPASS, and the repo root is not on
+    disk at all in an installed .app."""
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled:
+        return Path(bundled) / ".env"
+    return Path(__file__).resolve().parent.parent / ".env"
 
 
-def _apply_env_defaults(defaults: dict, dotenv: Path = _DOTENV):
-    """Overlay VVRITE_* values from .env and the environment onto defaults."""
+_DOTENV = _dotenv_path()
+
+
+def _env_values(dotenv: Path = _DOTENV) -> dict:
+    """VVRITE_* values from .env and the environment, keyed by preference name."""
     env = {}
     try:
         for line in dotenv.read_text(encoding="utf-8").splitlines():
@@ -83,13 +95,20 @@ def _apply_env_defaults(defaults: dict, dotenv: Path = _DOTENV):
         pass  # no .env in a packaged build, or unreadable — the environment still applies
     env.update(os.environ)
 
-    for key in _ENV_KEYS:
-        value = env.get(f"VVRITE_{key.upper()}")
-        if value:
-            defaults[key] = value
+    return {key: env[f"VVRITE_{key.upper()}"]
+            for key in _ENV_KEYS
+            if env.get(f"VVRITE_{key.upper()}")}
+
+
+def _apply_env_defaults(defaults: dict, dotenv: Path = _DOTENV):
+    """Overlay VVRITE_* values onto defaults."""
+    defaults.update(_env_values(dotenv))
 
 
 _apply_env_defaults(_DEFAULTS)
+
+# Bumped whenever the baked-in values change, so a rebuild propagates them.
+_ENV_STAMP_KEY = "env_stamp"
 
 _PREFERENCE_KEYS = tuple(_DEFAULTS.keys()) + ("mic_device", "ui_language")
 
@@ -106,6 +125,32 @@ class Preferences:
         self._defaults = NSUserDefaults.standardUserDefaults()
         self._defaults.registerDefaults_(_DEFAULTS)
         self._migrate_legacy_defaults_if_needed()
+        self._apply_baked_env_if_changed()
+
+    def _apply_baked_env_if_changed(self):
+        """Write baked-in .env values through to the saved settings, once per change.
+
+        Registering them as defaults is not enough: a value the user has ever saved —
+        including an empty string — lives in the persistent domain and wins over any
+        default. So an installed app would keep showing a blank endpoint no matter
+        what was baked in. Writing them makes the build's values take effect; stamping
+        the content means it happens once, and edits in Settings survive until the
+        baked values themselves change.
+        """
+        values = _env_values()
+        if not values:
+            return
+        # Not hash(): PYTHONHASHSEED is randomised per process, so the stamp would
+        # differ every launch and clobber the user's edits each time.
+        stamp = hashlib.sha1(
+            repr(sorted(values.items())).encode("utf-8")
+        ).hexdigest()
+        if self._defaults.stringForKey_(_ENV_STAMP_KEY) == stamp:
+            return
+        for key, value in values.items():
+            self._defaults.setObject_forKey_(value, key)
+        self._defaults.setObject_forKey_(stamp, _ENV_STAMP_KEY)
+        self._defaults.synchronize()
 
     def _migrate_legacy_defaults_if_needed(self):
         """Move values saved by older source runs into the current defaults domain."""
