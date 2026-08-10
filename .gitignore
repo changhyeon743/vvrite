@@ -10,3 +10,6 @@ vendor/Sparkle/
 # Agent guidance docs — kept local only (AGENTS.md is the source; CLAUDE.md symlinks to it)
 AGENTS.md
 CLAUDE.md
+
+# Personal server addresses / model names — see .env.example
+.env
