@@ -55,7 +55,7 @@ from vvrite.widgets import ShortcutField, format_shortcut, active_shortcut
 
 # Layout constants for the tabbed settings window.
 WIN_W = 480
-CONTENT_H = 300
+CONTENT_H = 420
 MARGIN = 24
 LABEL_W = 120
 CTRL_X = MARGIN + LABEL_W + 12  # 156
@@ -108,6 +108,8 @@ class SettingsWindowController(NSObject):
         self._screen_context_checkbox = None
         self._screen_context_hint = None
         self._llm_endpoint_field = None
+        self._llm_model_field = None
+        self._llm_context_field = None
         self._start_sound_popup = None
         self._stop_sound_popup = None
         self._start_volume_slider = None
@@ -484,7 +486,48 @@ class SettingsWindowController(NSObject):
         y -= 22
         self._stt_hint = self._add_hint(content, y, t("settings.remote.hint"), x=MARGIN)
 
+        # The corrector is a plain OpenAI-compatible chat endpoint, entirely separate
+        # from the ASR server above — it works with on-device ASR too. Its fields come
+        # before the checkbox they gate, because a disabled checkbox above the field
+        # that enables it reads as broken.
+        y -= 40
+        self._add_header(content, y, t("settings.remote.llm_title"))
+
         y -= 30
+        self._llm_endpoint_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
+        )
+        self._llm_endpoint_field.setStringValue_(self._prefs.llm_endpoint)
+        self._llm_endpoint_field.setPlaceholderString_(t("settings.remote.llm_placeholder"))
+        self._llm_endpoint_field.setDelegate_(self)
+        content.addSubview_(self._llm_endpoint_field)
+
+        y -= 28
+        self._llm_model_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
+        )
+        self._llm_model_field.setStringValue_(self._prefs.llm_model)
+        self._llm_model_field.setPlaceholderString_(t("settings.remote.llm_model_placeholder"))
+        self._llm_model_field.setDelegate_(self)
+        content.addSubview_(self._llm_model_field)
+
+        # Without this the corrector has no domain to anchor on and leaves jargon
+        # mangled — measured, not theoretical, so it gets a field rather than a file.
+        y -= 28
+        self._llm_context_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
+        )
+        self._llm_context_field.setStringValue_(self._prefs.llm_context)
+        self._llm_context_field.setPlaceholderString_(
+            t("settings.remote.llm_context_placeholder")
+        )
+        self._llm_context_field.setDelegate_(self)
+        content.addSubview_(self._llm_context_field)
+
+        y -= 20
+        self._add_hint(content, y, t("settings.remote.llm_hint"), x=MARGIN)
+
+        y -= 28
         self._stt_correction_checkbox = NSButton.alloc().initWithFrame_(
             NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
         )
@@ -499,21 +542,7 @@ class SettingsWindowController(NSObject):
             content, y, t("settings.remote.correction_hint"), x=MARGIN
         )
 
-        # The corrector is a plain OpenAI-compatible chat endpoint and is entirely
-        # separate from the ASR server above — it works with on-device ASR too.
         y -= 28
-        self._llm_endpoint_field = NSTextField.alloc().initWithFrame_(
-            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 24)
-        )
-        self._llm_endpoint_field.setStringValue_(self._prefs.llm_endpoint)
-        self._llm_endpoint_field.setPlaceholderString_(t("settings.remote.llm_placeholder"))
-        self._llm_endpoint_field.setDelegate_(self)
-        content.addSubview_(self._llm_endpoint_field)
-
-        y -= 20
-        self._add_hint(content, y, t("settings.remote.llm_hint"), x=MARGIN)
-
-        y -= 30
         self._screen_context_checkbox = NSButton.alloc().initWithFrame_(
             NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
         )
@@ -804,7 +833,9 @@ class SettingsWindowController(NSObject):
         """
         if self._stt_correction_checkbox is None:
             return
-        has_llm = bool(self._prefs.llm_endpoint.strip())
+        # The model name is required too: vLLM answers 400 to a blank one, and the
+        # correction then fails open so silently that it looks like it is just off.
+        has_llm = bool(self._prefs.llm_endpoint.strip() and self._prefs.llm_model.strip())
         self._stt_correction_checkbox.setEnabled_(has_llm)
         self._stt_correction_checkbox.setState_(1 if self._prefs.stt_correction else 0)
         if self._stt_correction_hint is not None:
@@ -948,6 +979,14 @@ class SettingsWindowController(NSObject):
             self._save_stt_endpoint()
         elif field == self._llm_endpoint_field:
             self._prefs.llm_endpoint = self._llm_endpoint_field.stringValue().strip()
+            # The correction checkbox is gated on this field, so without a refresh
+            # here the only way to reach it was to close and reopen Settings.
+            self._refresh_remote_controls()
+        elif field == self._llm_model_field:
+            self._prefs.llm_model = self._llm_model_field.stringValue().strip()
+            self._refresh_remote_controls()
+        elif field == self._llm_context_field:
+            self._prefs.llm_context = self._llm_context_field.stringValue().strip()
 
     @objc.typedSelector(b"v@:@")
     def openAccessibility_(self, sender):
