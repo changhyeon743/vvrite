@@ -43,6 +43,9 @@ _DEFAULTS = {
     # Who is speaking, in one line. Without it the corrector has no domain to
     # anchor on and leaves jargon mangled — measured, not theoretical.
     "llm_context": "",
+    # OCR the frontmost window while recording and give the corrector the
+    # identifiers it finds. Needs Screen Recording permission, so it is opt-in.
+    "screen_context": False,
     "max_tokens": 128000,
     "launch_at_login": False,
     "sound_start": "Glass",
@@ -280,6 +283,14 @@ class Preferences:
     @llm_model.setter
     def llm_model(self, value: str):
         self._set("llm_model", value)
+
+    @property
+    def screen_context(self) -> bool:
+        return bool(self._get("screen_context"))
+
+    @screen_context.setter
+    def screen_context(self, value: bool):
+        self._set("screen_context", bool(value))
 
     @property
     def stt_correction(self) -> bool:

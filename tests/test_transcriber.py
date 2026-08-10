@@ -77,6 +77,8 @@ class TestRemoteEndpoint(unittest.TestCase):
         prefs.stt_correction = kw.get("stt_correction", False)
         prefs.llm_endpoint = kw.get("llm_endpoint", "")
         prefs.llm_model = "test-model"
+        prefs.llm_context = ""
+        prefs.screen_context = kw.get("screen_context", False)
         return prefs
 
     @patch("vvrite.transcriber.os.unlink")
@@ -223,6 +225,50 @@ class TestRemoteEndpoint(unittest.TestCase):
                 self.assertFalse(transcriber.is_model_cached("any/model"))
         finally:
             transcriber._model = old_model
+
+
+class TestScreenContext(unittest.TestCase):
+    """On-screen words reach the corrector, but only as candidates."""
+
+    def test_terms_appear_in_the_prompt(self):
+        from vvrite.transcriber import _correction_prompt
+
+        prompt = _correction_prompt("", "", ["useEffect", "nextbase-v3"])
+        self.assertIn("useEffect, nextbase-v3", prompt)
+        # Framed as "fix only if the pronunciation matches" — the window in front
+        # is mostly unrelated to what was said, so these must not read as vocabulary.
+        self.assertIn("들어맞지 않으면 무시한다", prompt)
+        # The two worked examples are what make the rule fire at all.
+        self.assertIn("콴트랩→quant-lab", prompt)
+
+    def test_no_terms_means_no_extra_rule(self):
+        from vvrite.transcriber import _correction_prompt
+
+        self.assertNotIn("화면에 있던", _correction_prompt("", "", []))
+        self.assertNotIn("화면에 있던", _correction_prompt("", "", None))
+
+    @patch("vvrite.transcriber.os.unlink")
+    def test_screen_terms_are_not_read_when_disabled(self, mock_unlink):
+        import vvrite.screen as screen
+        from vvrite.transcriber import transcribe
+
+        asr = MagicMock()
+        asr.json.return_value = {"text": "원문"}
+        llm = MagicMock()
+        llm.json.return_value = {"choices": [{"message": {"content": "교정"}}]}
+        requests = MagicMock()
+        requests.post.side_effect = [asr, llm]
+
+        with patch.object(screen, "terms") as mock_terms, \
+                patch.dict("sys.modules", {"requests": requests}), \
+                patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+            transcribe("/tmp/rec.wav", self._prefs())
+        mock_terms.assert_not_called()
+
+    def _prefs(self, **kw):
+        return TestRemoteEndpoint._prefs(
+            self, stt_correction=True,
+            llm_endpoint="http://llm.local:8000/v1/chat/completions", **kw)
 
 
 class TestLocalModelNotReady(unittest.TestCase):

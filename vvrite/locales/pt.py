@@ -119,6 +119,8 @@ strings = {
             "not_asr": "Não é um servidor ASR — verifique o endereço",
             "correction": "Corrigir palavras mal reconhecidas com um LLM",
             "correction_hint": "Executa no servidor após a transcrição. Mais preciso com jargão, acrescenta cerca de 2 segundos.",
+            "screen_context": "Usar palavras visíveis na tela como dicas de correção",
+            "screen_context_hint": "Lê a janela em primeiro plano enquanto você fala, para grafar corretamente os nomes na tela. Requer permissão de Gravação de Tela. Não adiciona atraso.",
         },
         "custom_words": {
             "title": "Palavras personalizadas",

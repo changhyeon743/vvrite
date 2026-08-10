@@ -119,6 +119,8 @@ strings = {
             "not_asr": "ASR 서버가 아닙니다 — 주소를 확인하세요",
             "correction": "잘못 인식된 단어를 LLM으로 교정",
             "correction_hint": "인식 후 서버에서 실행됩니다. 전문 용어 정확도가 올라가지만 2초 정도 더 걸립니다.",
+            "screen_context": "화면에 보이는 단어를 교정 힌트로 사용",
+            "screen_context_hint": "말하는 동안 앞 창을 읽어 화면 속 이름을 정확히 표기합니다. 화면 기록 권한이 필요하며, 지연은 없습니다.",
         },
         "custom_words": {
             "title": "사용자 지정 단어",

@@ -119,6 +119,8 @@ strings = {
             "not_asr": "ASR sunucusu değil — adresi kontrol edin",
             "correction": "Yanlış tanınan kelimeleri LLM ile düzelt",
             "correction_hint": "Yazıya dökme sonrası sunucuda çalışır. Teknik terimlerde daha doğru, yaklaşık 2 saniye ekler.",
+            "screen_context": "Ekranda görünen kelimeleri düzeltme ipucu olarak kullan",
+            "screen_context_hint": "Siz konuşurken öndeki pencereyi okur, böylece ekrandaki adlar doğru yazılır. Ekran Kaydı izni gerekir. Gecikme eklemez.",
         },
         "custom_words": {
             "title": "Özel Kelimeler",

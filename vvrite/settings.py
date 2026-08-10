@@ -43,7 +43,7 @@ from AppKit import (
 )
 from Foundation import NSLog, NSURL, NSTimer
 
-from vvrite import launch_at_login, sounds
+from vvrite import launch_at_login, screen, sounds
 from vvrite.audio_devices import (
     get_default_input_device,
     list_input_devices,
@@ -105,6 +105,8 @@ class SettingsWindowController(NSObject):
         self._stt_hint = None
         self._stt_correction_checkbox = None
         self._stt_correction_hint = None
+        self._screen_context_checkbox = None
+        self._screen_context_hint = None
         self._llm_endpoint_field = None
         self._start_sound_popup = None
         self._stop_sound_popup = None
@@ -511,6 +513,21 @@ class SettingsWindowController(NSObject):
         y -= 20
         self._add_hint(content, y, t("settings.remote.llm_hint"), x=MARGIN)
 
+        y -= 30
+        self._screen_context_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(MARGIN, y, WIN_W - 2 * MARGIN, 20)
+        )
+        self._screen_context_checkbox.setButtonType_(NSButtonTypeSwitch)
+        self._screen_context_checkbox.setTitle_(t("settings.remote.screen_context"))
+        self._screen_context_checkbox.setTarget_(self)
+        self._screen_context_checkbox.setAction_("screenContextToggled:")
+        content.addSubview_(self._screen_context_checkbox)
+
+        y -= 22
+        self._screen_context_hint = self._add_hint(
+            content, y, t("settings.remote.screen_context_hint"), x=MARGIN
+        )
+
         self._refresh_remote_controls()
 
     def _build_system_tab(self, content):
@@ -779,20 +796,46 @@ class SettingsWindowController(NSObject):
             self._stt_hint.setTextColor_(color)
 
     def _refresh_remote_controls(self):
-        """Correction only applies to a remote server, so grey it out without one."""
+        """Correction needs an LLM, not a remote ASR server.
+
+        It used to be gated on stt_endpoint, from when the ASR server did the
+        correcting — which left the checkbox greyed out for exactly the setup it now
+        supports best: on-device ASR plus a remote corrector.
+        """
         if self._stt_correction_checkbox is None:
             return
-        remote = bool(self._prefs.stt_endpoint.strip())
-        self._stt_correction_checkbox.setEnabled_(remote)
+        has_llm = bool(self._prefs.llm_endpoint.strip())
+        self._stt_correction_checkbox.setEnabled_(has_llm)
         self._stt_correction_checkbox.setState_(1 if self._prefs.stt_correction else 0)
         if self._stt_correction_hint is not None:
             self._stt_correction_hint.setTextColor_(
-                NSColor.secondaryLabelColor() if remote else NSColor.tertiaryLabelColor()
+                NSColor.secondaryLabelColor() if has_llm else NSColor.tertiaryLabelColor()
+            )
+
+        if self._screen_context_checkbox is None:
+            return
+        # Screen text is only ever consumed by the corrector.
+        correcting = has_llm and self._prefs.stt_correction
+        self._screen_context_checkbox.setEnabled_(correcting)
+        self._screen_context_checkbox.setState_(1 if self._prefs.screen_context else 0)
+        if self._screen_context_hint is not None:
+            self._screen_context_hint.setTextColor_(
+                NSColor.secondaryLabelColor() if correcting else NSColor.tertiaryLabelColor()
             )
 
     @objc.typedSelector(b"v@:@")
     def sttCorrectionToggled_(self, sender):
         self._prefs.stt_correction = sender.state() == 1
+        self._refresh_remote_controls()
+
+    @objc.typedSelector(b"v@:@")
+    def screenContextToggled_(self, sender):
+        enabled = sender.state() == 1
+        self._prefs.screen_context = enabled
+        # Ask for Screen Recording now rather than silently returning no terms on the
+        # next dictation. The first capture attempt is what triggers the system prompt.
+        if enabled:
+            screen.capture_async()
 
     @objc.typedSelector(b"v@:@")
     def pollPermissions_(self, timer):

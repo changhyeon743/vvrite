@@ -119,6 +119,8 @@ strings = {
             "not_asr": "Kein ASR-Server — Adresse prüfen",
             "correction": "Falsch erkannte Wörter mit einem LLM korrigieren",
             "correction_hint": "Läuft nach der Transkription auf dem Server. Genauer bei Fachbegriffen, dauert etwa 2 Sekunden länger.",
+            "screen_context": "Auf dem Bildschirm sichtbare Wörter als Korrekturhinweise verwenden",
+            "screen_context_hint": "Liest das vorderste Fenster, während Sie sprechen, damit Namen auf dem Bildschirm richtig geschrieben werden. Erfordert die Berechtigung „Bildschirmaufnahme“. Ohne zusätzliche Verzögerung.",
         },
         "custom_words": {
             "title": "Benutzerdefinierte Wörter",

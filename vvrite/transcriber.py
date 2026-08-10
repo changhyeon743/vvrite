@@ -124,7 +124,7 @@ def _safe_warm_up():
         print(f"Model warm-up skipped: {e}")
 
 
-def _correction_prompt(vocab: str, context: str = "") -> str:
+def _correction_prompt(vocab: str, context: str = "", screen_terms: list = None) -> str:
     """Rules for the post-ASR corrector.
 
     Every line replaced a failure seen in practice, so trim with care:
@@ -139,6 +139,18 @@ def _correction_prompt(vocab: str, context: str = "") -> str:
         rules[0] += f" 화자 정보: {context}"
     if vocab:
         rules.append(f"- 다음 표기는 그대로 둔다: {vocab}")
+    if screen_terms:
+        # These come off whatever window was in front, so most have nothing to do
+        # with what was said — hence "들어맞지 않으면 무시한다". The two worked
+        # examples are load-bearing: without them "파워뱅크쉐어링 카카오" was left
+        # alone, and "콴트랩" came back as "QuantLab" instead of the exact
+        # "quant-lab". Naming the Korean-pronunciation case is what makes it fire.
+        rules.append(
+            "- 말할 때 화면에 있던 표기다. 한국어 발음으로 말한 것이 이 중 하나와 들어맞으면 "
+            "그 표기를 글자 그대로 복사한다"
+            "(파워뱅크쉐어링 카카오→powerbanksharing-kakao, 콴트랩→quant-lab). "
+            f"들어맞지 않으면 무시한다: {', '.join(screen_terms)}"
+        )
     rules += [
         "- 입력한 언어를 그대로 유지한다. 절대 번역하지 마라. "
         "영어 문장은 영어로, 한국어 문장은 한국어로 출력한다.",
@@ -168,6 +180,10 @@ def _correct(text: str, prefs) -> str:
 
     import requests
 
+    from vvrite import screen
+
+    screen_terms = screen.terms() if prefs.screen_context else []
+
     try:
         resp = requests.post(
             endpoint,
@@ -180,7 +196,8 @@ def _correct(text: str, prefs) -> str:
                 "messages": [
                     {"role": "system",
                      "content": _correction_prompt(prefs.custom_words.strip(),
-                                                   prefs.llm_context.strip())},
+                                                   prefs.llm_context.strip(),
+                                                   screen_terms)},
                     {"role": "user", "content": text},
                 ],
             },

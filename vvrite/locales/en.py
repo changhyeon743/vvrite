@@ -119,6 +119,8 @@ strings = {
             "not_asr": "Not an ASR server — check the address",
             "correction": "Fix misrecognized words with an LLM",
             "correction_hint": "Runs on the server after transcription. More accurate with jargon, adds about 2 seconds.",
+            "screen_context": "Use words visible on screen as correction hints",
+            "screen_context_hint": "OCRs the front window while you speak, so on-screen names are spelled right. Needs Screen Recording permission. Adds no delay.",
         },
         "custom_words": {
             "title": "Custom Words",

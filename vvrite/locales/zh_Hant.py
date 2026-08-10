@@ -119,6 +119,8 @@ strings = {
             "not_asr": "不是 ASR 伺服器 — 請檢查位址",
             "correction": "使用 LLM 修正辨識錯誤的詞",
             "correction_hint": "轉寫完成後在伺服器上執行。專業術語更準確，但會多花約 2 秒。",
+            "screen_context": "使用螢幕上可見的字詞作為校正提示",
+            "screen_context_hint": "說話時讀取最前面的視窗，讓螢幕上的名稱拼寫正確。需要「螢幕錄製」權限。不增加延遲。",
         },
         "custom_words": {
             "title": "自訂詞彙",

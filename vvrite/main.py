@@ -28,7 +28,7 @@ from vvrite.status_bar import StatusBarController
 from vvrite.hotkey import HotkeyManager
 from vvrite.overlay import OverlayController
 from vvrite.onboarding import OnboardingWindowController
-from vvrite import transcriber, sounds, updater
+from vvrite import transcriber, sounds, updater, screen
 from vvrite.recorder import Recorder
 from vvrite.clipboard import paste_and_restore, retract_text
 
@@ -243,6 +243,13 @@ class AppDelegate(NSObject):
 
     def _start_recording(self):
         self._recording = True
+
+        # Before the overlay is shown, so the capture sees the user's window rather
+        # than ours. Runs in its own thread and finishes while the user is still
+        # speaking, which is what makes it free.
+        if self._prefs.screen_context and self._prefs.stt_correction:
+            screen.capture_async()
+
         sounds.play(self._prefs.sound_start, self._prefs.start_volume)
 
         self.performSelectorOnMainThread_withObject_waitUntilDone_(

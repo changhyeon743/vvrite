@@ -6,3 +6,4 @@ pyobjc-framework-Cocoa
 pyobjc-framework-ServiceManagement
 pyobjc-framework-ApplicationServices
 pyobjc-framework-AVFoundation
+pyobjc-framework-Vision

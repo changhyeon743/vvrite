@@ -25,6 +25,12 @@ info_plist = {
     "NSMicrophoneUsageDescription": (
         "vvrite needs microphone access to record and transcribe your speech."
     ),
+    # Only requested when the screen-context option is turned on: vvrite reads the
+    # frontmost window so the corrector can spell on-screen names correctly.
+    "NSScreenCaptureUsageDescription": (
+        "vvrite reads text from the window in front while you dictate, so names "
+        "already on screen are spelled correctly."
+    ),
     "NSHighResolutionCapable": True,
     "NSSupportsAutomaticTermination": False,
     "NSSupportsSuddenTermination": False,
@@ -48,6 +54,7 @@ pyobjc_hiddenimports = (
     + collect_submodules("Quartz")
     + collect_submodules("ApplicationServices")
     + collect_submodules("AVFoundation")
+    + collect_submodules("Vision")
     + collect_submodules("ServiceManagement")
 )
 
