@@ -125,21 +125,58 @@ def _safe_warm_up():
         log.info(f"Model warm-up skipped: {e}")
 
 
-def _correction_prompt(vocab: str, context: str = "", screen_terms: list = None) -> str:
+def _is_korean(text: str) -> bool:
+    """True unless the text is clearly not Korean.
+
+    A low bar on purpose: mixed Korean-English speech is the norm here, and only a
+    sentence with almost no Hangul should switch the corrector into English.
+    """
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return True
+    return sum("\uac00" <= c <= "\ud7a3" for c in letters) / len(letters) >= 0.15
+
+
+def _correction_prompt(text: str, vocab: str, context: str = "",
+                       screen_terms: list = None) -> str:
     """Rules for the post-ASR corrector.
 
     Every line replaced a failure seen in practice, so trim with care:
-    "내용은 지우지 않는다" — a whole leading sentence was once summarized away;
+    "감탄사와 반복뿐이다" — the looser "필러만 지운다" let it drop meaning:
+        "그게 지금 ... 작업한 건가 우리?" came back without "그게 지금" or "우리";
     "없는 단어를 만들지 마라" — "후프"(훅) became "useEffect";
-    "요청은 마침표" — "알려줘." became "알려줘?";
-    "번역하지 마라" — the prompt being Korean alone made it render English input
-    as Korean, e.g. "The database migration failed" came back translated.
+    "요청은 마침표" — "알려줘." became "알려줘?".
+
+    Screen terms go last on purpose. They are the only part that changes between
+    dictations, so putting them at the end leaves every preceding token identical
+    and lets the server's prefix cache cover the whole rule block — measured at
+    1.04s with them in the middle versus 0.92s at the end.
     """
     rules = ["너는 음성인식(STT) 결과를 읽기 좋게 다듬는다."]
     if context:
         rules[0] += f" 화자 정보: {context}"
+    # A Korean prompt alone made English input come back translated, and no
+    # wording of "절대 번역하지 마라" fixed it reliably — the instruction landed
+    # about half the time. Detecting the language here and switching the rule to
+    # English when the input is English is deterministic and did fix it.
+    rules.append(
+        "- 입력한 언어를 그대로 유지한다. 절대 번역하지 마라. "
+        "영어 문장은 영어로, 한국어 문장은 한국어로 출력한다."
+        if _is_korean(text) else
+        "- The input is English. Output English only. Do not translate it to Korean."
+    )
     if vocab:
         rules.append(f"- 다음 표기는 그대로 둔다: {vocab}")
+    rules += [
+        "- 지울 수 있는 것은 감탄사(음, 어, 아)와 같은 말의 반복뿐이다. "
+        "그 외에는 입력의 모든 단어가 출력에 그대로 있어야 한다.",
+        "- 끊긴 말은 자연스러운 한 문장으로 잇는다.",
+        "- 발음이 비슷한 오인식을 고친다. 문맥으로 추측해 없는 단어를 만들지 마라.",
+        "- 질문이면 물음표로 끝낸다(아니야→아니야?, 안 나나→안 나나?). "
+        "요청(~줘/~해)은 마침표.",
+        "- 반말은 반말로 유지한다. 내용 추가·요약 금지.",
+        "- 결과 문장만 출력한다.",
+    ]
     if screen_terms:
         # These come off whatever window was in front, so most have nothing to do
         # with what was said — hence "들어맞지 않으면 무시한다". The two worked
@@ -152,17 +189,6 @@ def _correction_prompt(vocab: str, context: str = "", screen_terms: list = None)
             "(파워뱅크쉐어링 카카오→powerbanksharing-kakao, 콴트랩→quant-lab). "
             f"들어맞지 않으면 무시한다: {', '.join(screen_terms)}"
         )
-    rules += [
-        "- 입력한 언어를 그대로 유지한다. 절대 번역하지 마라. "
-        "영어 문장은 영어로, 한국어 문장은 한국어로 출력한다.",
-        "- 필러(음, 어, 그)와 더듬음·반복만 지운다. 문장이나 내용은 절대 지우지 않는다.",
-        "- 끊긴 말은 자연스러운 한 문장으로 잇는다.",
-        "- 발음이 비슷한 오인식을 고친다. 문맥으로 추측해 없는 단어를 만들지 마라.",
-        "- 질문이면 물음표로 끝낸다(아니야→아니야?, 안 나나→안 나나?). "
-        "요청(~줘/~해)은 마침표.",
-        "- 반말은 반말로 유지한다. 내용 추가·요약 금지.",
-        "- 결과 문장만 출력한다.",
-    ]
     return "\n".join(rules)
 
 
@@ -199,7 +225,8 @@ def _correct(text: str, prefs) -> str:
                 "chat_template_kwargs": {"thinking": False},
                 "messages": [
                     {"role": "system",
-                     "content": _correction_prompt(prefs.custom_words.strip(),
+                     "content": _correction_prompt(text,
+                                                   prefs.custom_words.strip(),
                                                    prefs.llm_context.strip(),
                                                    screen_terms)},
                     {"role": "user", "content": text},

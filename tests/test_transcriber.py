@@ -233,7 +233,7 @@ class TestScreenContext(unittest.TestCase):
     def test_terms_appear_in_the_prompt(self):
         from vvrite.transcriber import _correction_prompt
 
-        prompt = _correction_prompt("", "", ["useEffect", "nextbase-v3"])
+        prompt = _correction_prompt("훅 얘기", "", "", ["useEffect", "nextbase-v3"])
         self.assertIn("useEffect, nextbase-v3", prompt)
         # Framed as "fix only if the pronunciation matches" — the window in front
         # is mostly unrelated to what was said, so these must not read as vocabulary.
@@ -244,8 +244,8 @@ class TestScreenContext(unittest.TestCase):
     def test_no_terms_means_no_extra_rule(self):
         from vvrite.transcriber import _correction_prompt
 
-        self.assertNotIn("화면에 있던", _correction_prompt("", "", []))
-        self.assertNotIn("화면에 있던", _correction_prompt("", "", None))
+        self.assertNotIn("화면에 있던", _correction_prompt("아무 말", "", "", []))
+        self.assertNotIn("화면에 있던", _correction_prompt("아무 말", "", "", None))
 
     @patch("vvrite.transcriber.os.unlink")
     def test_screen_terms_are_not_read_when_disabled(self, mock_unlink):
