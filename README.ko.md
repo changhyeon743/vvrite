@@ -20,6 +20,10 @@
 
 ---
 
+> **이 저장소는 [shaircast/vvrite](https://github.com/shaircast/vvrite)의 포크입니다** (MIT, © 2026 shpark).
+> 원격 ASR 서버, LLM 후교정, 이벤트 탭 워치독, 로컬 빌드 스크립트를 추가했습니다.
+> 자세한 내용은 [영문 README](README.md)를 참고하세요.
+
 ## 작동 방식
 
 1. 단축키를 누릅니다 (기본값: `Option + Space`)
@@ -54,7 +58,6 @@ vvrite는 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-commu
 
 - 빌드된 .app은 Apple Silicon (M1/M2/M3/M4) 탑재 macOS 15 이상; 소스에서 빌드 시 macOS 13 이상
 - ASR 모델용 디스크 공간 약 2 GB
-- 소스에서 실행 시 `ffmpeg` 필요
 - 마이크 권한
 - 손쉬운 사용 권한 (전역 단축키용)
 
@@ -64,12 +67,11 @@ vvrite는 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-commu
 
 ```bash
 # 복제
-git clone https://github.com/shaircast/vvrite.git
+git clone https://github.com/changhyeon743/vvrite.git
 cd vvrite
 
 # 의존성 설치
 pip install -r requirements.txt
-brew install ffmpeg
 
 # 실행
 python -m vvrite
@@ -112,11 +114,10 @@ open dist/vvrite.dmg
 | UI | PyObjC (AppKit, Quartz) |
 | ASR 모델 | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
 | 추론 | Apple Silicon GPU에서 [mlx-audio](https://github.com/ml-explore/mlx-audio) |
-| 오디오 | sounddevice + ffmpeg |
+| 오디오 | sounddevice |
 | 패키징 | PyInstaller |
 
 ## 라이선스
 
 MIT — 자세한 내용은 [LICENSE](LICENSE)를 참조하세요.
 
-이 앱은 [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.html) 라이선스의 [ffmpeg](https://ffmpeg.org/)을 번들로 포함합니다. ffmpeg 소스 코드는 https://ffmpeg.org/download.html 에서 받을 수 있습니다. ASR 모델 [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit)은 Apache 2.0 라이선스입니다.

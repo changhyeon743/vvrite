@@ -20,6 +20,10 @@
 
 ---
 
+> **This is a fork of [shaircast/vvrite](https://github.com/shaircast/vvrite)** (MIT, © 2026 shpark).
+> It adds an optional remote ASR server, LLM post-correction, an event-tap watchdog,
+> and a local build script. See the [English README](README.md) for details.
+
 ## Cómo funciona
 
 1. Presiona la tecla de acceso rápido (por defecto: `Option + Space`)
@@ -54,7 +58,6 @@ Esto incluye coreano, inglés, japonés, chino, cantonés, árabe, alemán, fran
 
 - .app precompilada: macOS 15 o superior en Apple Silicon (M1/M2/M3/M4); compilación desde fuente: macOS 13+
 - Aproximadamente 2 GB de espacio en disco para el modelo ASR
-- `ffmpeg` instalado cuando se ejecuta desde el código fuente
 - Permiso de micrófono
 - Permiso de accesibilidad (para la tecla de acceso rápido global)
 
@@ -64,12 +67,11 @@ Esto incluye coreano, inglés, japonés, chino, cantonés, árabe, alemán, fran
 
 ```bash
 # Clonar
-git clone https://github.com/shaircast/vvrite.git
+git clone https://github.com/changhyeon743/vvrite.git
 cd vvrite
 
 # Instalar dependencias
 pip install -r requirements.txt
-brew install ffmpeg
 
 # Ejecutar
 python -m vvrite
@@ -107,11 +109,10 @@ En el primer inicio, el asistente de configuración te guiará a través de:
 | UI | PyObjC (AppKit, Quartz) |
 | Modelo ASR | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
 | Inferencia | [mlx-audio](https://github.com/ml-explore/mlx-audio) en GPU de Apple Silicon |
-| Audio | sounddevice + ffmpeg |
+| Audio | sounddevice |
 | Empaquetado | PyInstaller |
 
 ## Licencia
 
 MIT — consulta [LICENSE](LICENSE) para más detalles.
 
-Esta aplicación incluye [ffmpeg](https://ffmpeg.org/), que está licenciado bajo la [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.html). El código fuente de ffmpeg está disponible en https://ffmpeg.org/download.html. El modelo ASR [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) está licenciado bajo Apache 2.0.

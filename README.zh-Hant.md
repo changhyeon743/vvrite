@@ -20,6 +20,10 @@
 
 ---
 
+> **This is a fork of [shaircast/vvrite](https://github.com/shaircast/vvrite)** (MIT, © 2026 shpark).
+> It adds an optional remote ASR server, LLM post-correction, an event-tap watchdog,
+> and a local build script. See the [English README](README.md) for details.
+
 ## 運作方式
 
 1. 按下快速鍵（預設：`Option + Space`）
@@ -54,7 +58,6 @@ vvrite 使用 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-c
 
 - 預建 .app 需要搭載 Apple Silicon（M1/M2/M3/M4）的 macOS 15 或更高版本；從原始碼建置時 macOS 13 或更高版本
 - ASR 模型需要約 2 GB 磁碟空間
-- 從原始碼執行時需要安裝 `ffmpeg`
 - 麥克風權限
 - 輔助使用權限（用於全域快速鍵）
 
@@ -64,12 +67,11 @@ vvrite 使用 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-c
 
 ```bash
 # 複製儲存庫
-git clone https://github.com/shaircast/vvrite.git
+git clone https://github.com/changhyeon743/vvrite.git
 cd vvrite
 
 # 安裝相依套件
 pip install -r requirements.txt
-brew install ffmpeg
 
 # 執行
 python -m vvrite
@@ -107,11 +109,10 @@ open dist/vvrite.dmg
 | UI | PyObjC (AppKit, Quartz) |
 | ASR 模型 | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
 | 推論 | 在 Apple Silicon GPU 上執行 [mlx-audio](https://github.com/ml-explore/mlx-audio) |
-| 音訊 | sounddevice + ffmpeg |
+| 音訊 | sounddevice |
 | 封裝 | PyInstaller |
 
 ## 授權條款
 
 MIT — 詳情請參閱 [LICENSE](LICENSE)。
 
-本應用程式捆綁了 [ffmpeg](https://ffmpeg.org/)，其遵循 [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.html) 授權條款。ffmpeg 原始碼可在 https://ffmpeg.org/download.html 取得。ASR 模型 [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) 遵循 Apache 2.0 授權條款。
