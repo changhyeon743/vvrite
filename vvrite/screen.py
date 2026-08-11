@@ -35,35 +35,60 @@ _terms: list[str] = []
 _thread: threading.Thread | None = None
 
 
-def _frontmost_window_image():
-    """CGImage of the frontmost ordinary window, or None.
+def _focused_window():
+    """The window the user is dictating into, or None.
 
-    Skips vvrite's own windows: the recording overlay appears at almost the same
+    Ask the workspace which app has focus, then take that app's frontmost ordinary
+    window. Walking the z-order alone would look right most of the time and quietly
+    read the wrong app whenever the focused window is narrow (a chat panel, a
+    calculator) — it would be skipped and the app *behind* it read instead, which is
+    worse than reading nothing.
+
+    vvrite is never the answer: the recording overlay appears at almost the same
     moment as this capture, and OCRing our own UI would feed the corrector nothing
     but its own labels.
     """
     import Quartz
+    from AppKit import NSWorkspace
+
+    front = NSWorkspace.sharedWorkspace().frontmostApplication()
+    if front is None or front.processIdentifier() == os.getpid():
+        return None
+    focused_pid = front.processIdentifier()
 
     windows = Quartz.CGWindowListCopyWindowInfo(
         Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
         Quartz.kCGNullWindowID,
     )
-    own_pid = os.getpid()
-    for window in windows or []:
+    for window in windows or []:  # front-to-back within the list
         if window.get("kCGWindowLayer") != 0:  # 0 == normal app window
             continue
-        if window.get("kCGWindowOwnerPID") == own_pid:
+        if window.get("kCGWindowOwnerPID") != focused_pid:
             continue
         bounds = window["kCGWindowBounds"]
+        # Still worth a floor: a focused app can own a tiny utility window that
+        # holds no readable text, and OCRing it just costs time.
         if bounds["Width"] < MIN_WINDOW_WIDTH:
             continue
-        return Quartz.CGWindowListCreateImage(
-            Quartz.CGRectMake(bounds["X"], bounds["Y"], bounds["Width"], bounds["Height"]),
-            Quartz.kCGWindowListOptionIncludingWindow,
-            window["kCGWindowNumber"],
-            Quartz.kCGWindowImageBoundsIgnoreFraming,
-        )
+        return window
     return None
+
+
+def _frontmost_window_image():
+    """CGImage of the focused window, or None."""
+    import Quartz
+
+    window = _focused_window()
+    if window is None:
+        return None
+    bounds = window["kCGWindowBounds"]
+    return Quartz.CGWindowListCreateImage(
+        Quartz.CGRectMake(bounds["X"], bounds["Y"], bounds["Width"], bounds["Height"]),
+        # Just this window — anything stacked on top of it is not what is being read.
+        Quartz.kCGWindowListOptionIncludingWindow,
+        window["kCGWindowNumber"],
+        Quartz.kCGWindowImageBoundsIgnoreFraming,
+    )
 
 
 def _read_terms() -> list[str]:
