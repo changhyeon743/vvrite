@@ -36,6 +36,7 @@ def _query_hostapis():
 
 def refresh_portaudio_device_list():
     """Force PortAudio to rebuild its device list after hot-plug changes."""
+    invalidate_device_cache()
     terminate = getattr(sd, "_terminate", None)
     initialize = getattr(sd, "_initialize", None)
     if not callable(terminate) or not callable(initialize):
@@ -177,12 +178,37 @@ def resolve_input_device(
     return None
 
 
+# Resolving a device means asking PortAudio to enumerate every input on the
+# machine, which measured 204ms — paid on every single dictation, before the mic
+# stream even opens, so it came straight off the front of the recording. Devices
+# do not change between two presses of a hotkey, so remember the answer.
+_preferred_cache: dict = {}
+
+
+def invalidate_device_cache():
+    """Forget the resolved device. Called when opening the stream fails, which is
+    how an unplugged mic announces itself, and when the user picks a new one."""
+    _preferred_cache.clear()
+
+
 def get_preferred_input_device(
     selection: str | None,
     devices: list[AudioInputDevice] | None = None,
 ) -> AudioInputDevice | None:
     if devices is None:
+        if selection in _preferred_cache:
+            return _preferred_cache[selection]
         devices = list_input_devices()
+        resolved = _resolve_preferred(selection, devices)
+        _preferred_cache[selection] = resolved
+        return resolved
+    return _resolve_preferred(selection, devices)
+
+
+def _resolve_preferred(
+    selection: str | None,
+    devices: list[AudioInputDevice],
+) -> AudioInputDevice | None:
 
     selected = resolve_input_device(selection, devices)
     if selected is not None:

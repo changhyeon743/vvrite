@@ -51,5 +51,32 @@ class TestFocusedWindow(unittest.TestCase):
         self.assertIsNone(self._run([_window(os.getpid())], os.getpid()))
 
 
+class TestDeviceCache(unittest.TestCase):
+    """Enumerating inputs costs ~200ms and used to run on every recording start."""
+
+    def test_second_lookup_does_not_re_enumerate(self):
+        import vvrite.audio_devices as ad
+
+        ad.invalidate_device_cache()
+        dev = MagicMock(index=0, device_id="x", name="Mic")
+        with patch.object(ad, "list_input_devices", return_value=[dev]) as listed:
+            ad.get_preferred_input_device(None)
+            ad.get_preferred_input_device(None)
+        self.assertEqual(listed.call_count, 1)
+
+    def test_invalidate_forces_a_fresh_lookup(self):
+        """A new microphone choice, or a failed stream open, has to be seen."""
+        import vvrite.audio_devices as ad
+
+        ad.invalidate_device_cache()
+        dev = MagicMock(index=0, device_id="x", name="Mic")
+        with patch.object(ad, "list_input_devices", return_value=[dev]) as listed:
+            ad.get_preferred_input_device(None)
+            ad.invalidate_device_cache()
+            ad.get_preferred_input_device(None)
+        self.assertEqual(listed.call_count, 2)
+        ad.invalidate_device_cache()
+
+
 if __name__ == "__main__":
     unittest.main()

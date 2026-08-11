@@ -8,7 +8,7 @@ import numpy as np
 import sounddevice as sd
 import soundfile as sf
 
-from vvrite.audio_devices import get_preferred_input_device, refresh_portaudio_device_list
+from vvrite.audio_devices import invalidate_device_cache, get_preferred_input_device, refresh_portaudio_device_list
 from vvrite.preferences import CHANNELS
 
 

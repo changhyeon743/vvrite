@@ -46,6 +46,7 @@ from Foundation import NSLog, NSURL, NSTimer
 from vvrite import launch_at_login, screen, sounds
 from vvrite.audio_devices import (
     get_default_input_device,
+    invalidate_device_cache,
     list_input_devices,
     resolve_input_device,
 )
@@ -901,6 +902,9 @@ class SettingsWindowController(NSObject):
             self._prefs.mic_device = None
         else:
             self._prefs.mic_device = self._mic_device_ids[index]
+        # The resolved device is cached to keep it off the recording path, so a
+        # new choice has to say so or the next dictation still uses the old mic.
+        invalidate_device_cache()
 
     @objc.typedSelector(b"v@:@")
     def uiLanguageChanged_(self, sender):
