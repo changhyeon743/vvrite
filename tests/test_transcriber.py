@@ -307,3 +307,24 @@ class TestLocalModelNotReady(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOnboardingGate(unittest.TestCase):
+    """Onboarding's Done button asks "can we transcribe?", not "is it in RAM?"."""
+
+    @patch("vvrite.transcriber._is_downloaded", return_value=True)
+    def test_downloaded_but_unloaded_model_can_proceed(self, mock_dl):
+        """The weights are only loaded after onboarding, so gating on memory left
+        anyone with the model already on disk unable to finish."""
+        import vvrite.transcriber as transcriber
+
+        old = transcriber._model
+        try:
+            transcriber._model = None
+            prefs = MagicMock()
+            prefs.stt_endpoint = ""
+            with patch("vvrite.transcriber.Preferences", return_value=prefs):
+                self.assertFalse(transcriber.is_model_loaded())
+                self.assertTrue(transcriber.is_model_cached("any/model"))
+        finally:
+            transcriber._model = old

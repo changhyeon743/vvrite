@@ -291,7 +291,12 @@ class OnboardingWindowController(NSObject):
         if self._step == _PERMISSIONS:
             self._next_btn.setEnabled_(self._all_permissions_granted())
         elif self._step == _MODEL:
-            self._next_btn.setEnabled_(transcriber.is_model_loaded())
+            # Cached, not loaded. is_model_loaded() asks whether the weights are in
+            # memory, which onboarding has no reason to require and which is false
+            # for anyone whose model is already on disk — they were left staring at
+            # a dead Done button with nothing to click, unless they typed a remote
+            # address to satisfy the other half of the check.
+            self._next_btn.setEnabled_(transcriber.is_model_cached(self._prefs.model_id))
         else:
             self._next_btn.setEnabled_(True)
 
@@ -742,8 +747,10 @@ class OnboardingWindowController(NSObject):
         self._remote_field.setDelegate_(self)
         area.addSubview_(self._remote_field)
 
-        # If the model is already loaded (e.g. navigating back), reflect that.
-        if transcriber.is_model_loaded() and not self._prefs.stt_endpoint.strip():
+        # Already on disk — from a previous install, or from navigating back.
+        # Offering "Download" for a model that is already there is a button that
+        # appears to do nothing.
+        if transcriber._is_downloaded(self._prefs.model_id):
             self._download_btn.setHidden_(True)
             self._progress_label.setHidden_(False)
             self._progress_label.setStringValue_(t("onboarding.model.ready"))
