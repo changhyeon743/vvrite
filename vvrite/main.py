@@ -258,9 +258,12 @@ class AppDelegate(NSObject):
         )
 
         def level_cb(level):
-            self.performSelectorOnMainThread_withObject_waitUntilDone_(
-                "updateRecordingLevel:", float(level), False
-            )
+            # Called from PortAudio's realtime thread for every audio chunk —
+            # roughly 90 times a second. Hopping to the main thread that often
+            # floods the run loop the event tap is serviced on, and macOS kills a
+            # tap that misses its deadline. The overlay already redraws itself on a
+            # 20 Hz timer, so just leave the latest value where that timer reads it.
+            self._overlay._current_level = float(level)
 
         try:
             self._recorder.start(
@@ -329,10 +332,6 @@ class AppDelegate(NSObject):
         self._overlay.showRecording()
         self._status_bar.setStatus_("recording")
         self._status_bar.setRecording_(True)
-
-    @objc.typedSelector(b"v@:@")
-    def updateRecordingLevel_(self, level):
-        self._overlay._current_level = float(level)
 
     @objc.typedSelector(b"v@:@")
     def showTranscribingUI_(self, _):
