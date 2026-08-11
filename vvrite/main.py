@@ -245,17 +245,26 @@ class AppDelegate(NSObject):
     def _start_recording(self):
         self._recording = True
 
-        # Before the overlay is shown, so the capture sees the user's window rather
+        # Capture before the overlay is shown, so it sees the user's window rather
         # than ours. Runs in its own thread and finishes while the user is still
         # speaking, which is what makes it free.
         if self._prefs.screen_context and self._prefs.stt_correction:
             screen.capture_async()
 
-        sounds.play(self._prefs.sound_start, self._prefs.start_volume)
-
+        # Overlay first. Everything below touches CoreAudio, and waking a sleeping
+        # audio device costs a quarter second or worse — which the user saw as the
+        # window appearing late rather than as the sound being late.
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
             "showRecordingUI:", None, False
         )
+
+        # Off-thread for the same reason: the start chime is feedback, not a step
+        # the recording has to wait behind.
+        threading.Thread(
+            target=sounds.play,
+            args=(self._prefs.sound_start, self._prefs.start_volume),
+            daemon=True,
+        ).start()
 
         def level_cb(level):
             # Called from PortAudio's realtime thread for every audio chunk —
@@ -281,11 +290,15 @@ class AppDelegate(NSObject):
         # so a new recording can't start and race the in-flight clipboard swap.
         self._recording = False
         self._busy = True
-        sounds.play(self._prefs.sound_stop, self._prefs.stop_volume)
 
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
             "showTranscribingUI:", None, False
         )
+        threading.Thread(
+            target=sounds.play,
+            args=(self._prefs.sound_stop, self._prefs.stop_volume),
+            daemon=True,
+        ).start()
 
         try:
             raw_path = self._recorder.stop()
