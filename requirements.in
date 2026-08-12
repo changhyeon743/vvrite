@@ -1,0 +1,37 @@
+# Recompile requirements.txt for the supported Python/macOS target with:
+#
+#   uv pip compile requirements.in \
+#     --python-version 3.11 \
+#     --output-file requirements.txt
+#
+# Keep the inference stack pinned together. mlx-audio has a broad dependency
+# surface, and unconstrained upgrades have previously changed both the frozen
+# app contents and runtime behavior between builds.
+mlx-audio==0.4.0
+mlx==0.31.1
+mlx-metal==0.31.1
+mlx-lm==0.30.5
+huggingface-hub==1.6.0
+transformers==5.0.0rc3
+tokenizers==0.22.1
+safetensors==0.7.0
+numpy==2.2.6
+miniaudio==1.61
+tqdm==4.67.1
+cffi==2.0.0
+
+# Recording and WAV I/O.
+sounddevice==0.5.3
+soundfile==0.13.1
+
+# Native macOS bridges.
+pyobjc-core==12.1
+pyobjc-framework-Quartz==12.1
+pyobjc-framework-Cocoa==12.1
+pyobjc-framework-ServiceManagement==12.1
+pyobjc-framework-ApplicationServices==12.1
+pyobjc-framework-AVFoundation==12.1
+
+# Release builds always go through scripts/build.sh and PyInstaller.
+pyinstaller==6.19.0
+pyinstaller-hooks-contrib==2026.3

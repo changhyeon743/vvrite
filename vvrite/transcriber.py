@@ -1,14 +1,19 @@
 """Qwen3 ASR transcription using mlx-audio."""
 
 import os
-import tempfile
 
+import miniaudio
 import numpy as np
-import soundfile as sf
 from huggingface_hub import model_info, snapshot_download
-from mlx_audio.stt.utils import load_model
 
-from vvrite.preferences import Preferences, SAMPLE_RATE
+from vvrite.mlx_runtime import install_qwen_only_model_namespace
+
+
+install_qwen_only_model_namespace()
+
+from mlx_audio.stt.utils import load_model  # noqa: E402
+
+from vvrite.preferences import Preferences, SAMPLE_RATE  # noqa: E402
 
 
 _model = None
@@ -64,11 +69,15 @@ def load(prefs: Preferences = None):
     print("Model loaded.")
 
 
-def _create_warmup_audio() -> str:
-    fd, path = tempfile.mkstemp(suffix=".wav")
-    os.close(fd)
-    sf.write(path, np.zeros(SAMPLE_RATE // 2, dtype=np.float32), SAMPLE_RATE)
-    return path
+def _decode_audio(path: str) -> np.ndarray:
+    """Decode and resample a recorded WAV to mono 16 kHz float32 audio."""
+    decoded = miniaudio.decode_file(
+        path,
+        output_format=miniaudio.SampleFormat.FLOAT32,
+        nchannels=1,
+        sample_rate=SAMPLE_RATE,
+    )
+    return np.asarray(decoded.samples, dtype=np.float32)
 
 
 def warm_up():
@@ -77,15 +86,9 @@ def warm_up():
     if _model is None or _warmed_up:
         return
 
-    warmup_path = _create_warmup_audio()
-    try:
-        _model.generate(warmup_path, max_tokens=1)
-        _warmed_up = True
-    finally:
-        try:
-            os.unlink(warmup_path)
-        except OSError:
-            pass
+    silence = np.zeros(SAMPLE_RATE // 2, dtype=np.float32)
+    _model.generate(silence, max_tokens=1)
+    _warmed_up = True
 
 
 def _safe_warm_up():
@@ -99,9 +102,8 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
     """
     Transcribe a recorded WAV with Qwen3-ASR.
 
-    mlx-audio decodes the WAV (miniaudio) and resamples it to 16 kHz mono itself
-    (scipy.signal.resample_poly + downmix), so no external ffmpeg normalization is
-    needed. Cleans up the temp file after processing.
+    miniaudio decodes and resamples the WAV to 16 kHz mono, so no external
+    ffmpeg or SciPy runtime is needed. Cleans up the temp file after processing.
     """
     if prefs is None:
         prefs = Preferences()
@@ -122,10 +124,8 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
             else:
                 kwargs["language"] = language_param
 
-        result = _model.generate(
-            raw_wav_path,
-            **kwargs,
-        )
+        audio = _decode_audio(raw_wav_path)
+        result = _model.generate(audio, **kwargs)
         return result.text.strip()
     finally:
         try:

@@ -1,6 +1,9 @@
 """Tests for transcriber download/load split."""
+from array import array
 import unittest
 from unittest.mock import patch, MagicMock
+
+import numpy as np
 
 
 class TestGetModelSize(unittest.TestCase):
@@ -36,9 +39,7 @@ class TestDownloadModel(unittest.TestCase):
 
 
 class TestWarmUp(unittest.TestCase):
-    @patch("vvrite.transcriber.os.unlink")
-    @patch("vvrite.transcriber._create_warmup_audio", return_value="/tmp/warmup.wav")
-    def test_warm_up_runs_single_dummy_generate(self, mock_audio, mock_unlink):
+    def test_warm_up_runs_single_dummy_generate(self):
         import vvrite.transcriber as transcriber
 
         model = MagicMock()
@@ -50,8 +51,13 @@ class TestWarmUp(unittest.TestCase):
 
             transcriber.warm_up()
 
-            model.generate.assert_called_once_with("/tmp/warmup.wav", max_tokens=1)
-            mock_unlink.assert_called_once_with("/tmp/warmup.wav")
+            model.generate.assert_called_once()
+            audio = model.generate.call_args.args[0]
+            np.testing.assert_array_equal(
+                audio,
+                np.zeros(transcriber.SAMPLE_RATE // 2, dtype=np.float32),
+            )
+            self.assertEqual(model.generate.call_args.kwargs, {"max_tokens": 1})
             self.assertTrue(transcriber._warmed_up)
         finally:
             transcriber._model = old_model
@@ -66,6 +72,27 @@ class TestWarmUp(unittest.TestCase):
 
         mock_load_model.assert_called_once_with("/tmp/model")
         mock_safe_warm_up.assert_called_once_with()
+
+
+class TestDecodeAudio(unittest.TestCase):
+    @patch("vvrite.transcriber.miniaudio.decode_file")
+    def test_decodes_as_mono_16khz_float32(self, mock_decode):
+        from vvrite import transcriber
+
+        mock_decode.return_value = MagicMock(samples=array("f", [0.25, -0.5]))
+
+        audio = transcriber._decode_audio("/tmp/recording.wav")
+
+        mock_decode.assert_called_once_with(
+            "/tmp/recording.wav",
+            output_format=transcriber.miniaudio.SampleFormat.FLOAT32,
+            nchannels=1,
+            sample_rate=transcriber.SAMPLE_RATE,
+        )
+        np.testing.assert_array_equal(
+            audio,
+            np.array([0.25, -0.5], dtype=np.float32),
+        )
 
 
 if __name__ == "__main__":
