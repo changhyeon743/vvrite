@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -50,7 +50,7 @@ Das Standardmodell bietet zudem eine starke mehrsprachige Spracherkennungsunters
 
 ## Sprachunterstützung
 
-vvrite verwendet [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), eine MLX-Konvertierung von [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B). Laut der offiziellen Qwen-Modellkarte unterstützt Qwen3-ASR-1.7B Sprachidentifikation und Spracherkennung für 30 Sprachen und 22 chinesische Dialekte.
+vvrite verwendet [`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit), eine MLX-Konvertierung von [`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B). Laut der offiziellen Qwen-Modellkarte unterstützt Qwen3-ASR-1.7B Sprachidentifikation und Spracherkennung für 30 Sprachen und 22 chinesische Dialekte.
 
 Dazu gehören Koreanisch, Englisch, Japanisch, Chinesisch, Kantonesisch, Arabisch, Deutsch, Französisch, Spanisch, Portugiesisch, Indonesisch, Italienisch, Russisch, Thai, Vietnamesisch, Türkisch, Hindi, Malaiisch, Niederländisch, Schwedisch, Dänisch, Finnisch, Polnisch, Tschechisch, Filipino, Persisch, Griechisch, Ungarisch, Mazedonisch und Rumänisch sowie regionale chinesische Dialekte. Da vvrite diesen Checkpoint direkt über mlx-audio verwendet und keine feste Erkennungssprache erzwingt, funktioniert mehrsprachiges Diktieren für die vom Modell unterstützten Sprachen gut.
 
@@ -107,7 +107,7 @@ Beim ersten Start führt Sie der Einrichtungsassistent durch:
 | Komponente | Technologie |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR-Modell | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| ASR-Modell | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | Inferenz | [mlx-audio](https://github.com/ml-explore/mlx-audio) auf Apple Silicon GPU |
 | Audio | sounddevice |
 | Paketierung | PyInstaller |

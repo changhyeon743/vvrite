@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -50,7 +50,7 @@
 
 ## 言語サポート
 
-vvriteは[`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit)を使用しています。これは[`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)のMLX変換版です。公式Qwenモデルカードによると、Qwen3-ASR-1.7Bは30言語と22の中国語方言の言語識別と音声認識をサポートしています。
+vvriteは[`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit)を使用しています。これは[`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B)のMLX変換版です。公式Qwenモデルカードによると、Qwen3-ASR-1.7Bは30言語と22の中国語方言の言語識別と音声認識をサポートしています。
 
 対応言語には、韓国語、英語、日本語、中国語、広東語、アラビア語、ドイツ語、フランス語、スペイン語、ポルトガル語、インドネシア語、イタリア語、ロシア語、タイ語、ベトナム語、トルコ語、ヒンディー語、マレー語、オランダ語、スウェーデン語、デンマーク語、フィンランド語、ポーランド語、チェコ語、フィリピン語、ペルシア語、ギリシャ語、ハンガリー語、マケドニア語、ルーマニア語が含まれ、中国語の地域方言もサポートされています。vvriteはこのチェックポイントをmlx-audioを通じて直接使用し、特定の認識言語を強制しないため、モデルがサポートする言語であれば多言語の音声入力が適切に機能します。
 
@@ -107,7 +107,7 @@ open dist/vvrite.dmg
 | コンポーネント | 技術 |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASRモデル | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| ASRモデル | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | 推論 | Apple Silicon GPUで[mlx-audio](https://github.com/ml-explore/mlx-audio) |
 | オーディオ | sounddevice |
 | パッケージング | PyInstaller |

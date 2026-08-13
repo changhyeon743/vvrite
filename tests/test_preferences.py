@@ -119,9 +119,11 @@ class TestPreferences(unittest.TestCase):
         self.assertEqual(prefs.max_tokens, 128000)
 
     def test_default_model_id(self):
+        """0.6B, not 1.7B: twice as fast on Korean at the same character accuracy,
+        and 1.4GB less resident. VVRITE_MODEL_ID overrides it."""
         from vvrite.preferences import Preferences
         prefs = Preferences()
-        self.assertEqual(prefs.model_id, "mlx-community/Qwen3-ASR-1.7B-8bit")
+        self.assertEqual(prefs.model_id, "mlx-community/Qwen3-ASR-0.6B-8bit")
 
     def test_default_sounds(self):
         from vvrite.preferences import Preferences

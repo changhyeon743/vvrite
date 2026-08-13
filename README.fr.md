@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -50,7 +50,7 @@ Le modèle par défaut offre également une prise en charge multilingue robuste 
 
 ## Prise en charge linguistique
 
-vvrite utilise [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), qui est une conversion MLX de [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B). Selon la fiche officielle du modèle Qwen, Qwen3-ASR-1.7B prend en charge l'identification linguistique et la reconnaissance vocale pour 30 langues et 22 dialectes chinois.
+vvrite utilise [`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit), qui est une conversion MLX de [`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B). Selon la fiche officielle du modèle Qwen, Qwen3-ASR-1.7B prend en charge l'identification linguistique et la reconnaissance vocale pour 30 langues et 22 dialectes chinois.
 
 Cela inclut le coréen, l'anglais, le japonais, le chinois, le cantonais, l'arabe, l'allemand, le français, l'espagnol, le portugais, l'indonésien, l'italien, le russe, le thaï, le vietnamien, le turc, l'hindi, le malais, le néerlandais, le suédois, le danois, le finnois, le polonais, le tchèque, le philippin, le persan, le grec, le hongrois, le macédonien et le roumain, ainsi que la prise en charge des dialectes chinois régionaux. Comme vvrite utilise ce point de contrôle directement via mlx-audio et n'impose pas une langue de reconnaissance fixe, la dictée multilingue fonctionne bien pour les langues prises en charge par le modèle.
 
@@ -107,7 +107,7 @@ Au premier lancement, l'assistant de configuration vous guidera à travers :
 | Composant | Technologie |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| Modèle ASR | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| Modèle ASR | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | Inférence | [mlx-audio](https://github.com/ml-explore/mlx-audio) sur GPU Apple Silicon |
 | Audio | sounddevice |
 | Empaquetage | PyInstaller |

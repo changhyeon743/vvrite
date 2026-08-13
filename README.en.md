@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -121,7 +121,7 @@ identity is not found.
 
 ## Language Support
 
-vvrite uses [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), which is an MLX conversion of [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B). According to the official Qwen model card, Qwen3-ASR-1.7B supports language identification and speech recognition for 30 languages and 22 Chinese dialects.
+vvrite uses [`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit), which is an MLX conversion of [`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B). According to the official Qwen model card, Qwen3-ASR supports language identification and speech recognition for 30 languages and 22 Chinese dialects.
 
 That includes Korean, English, Japanese, Chinese, Cantonese, Arabic, German, French, Spanish, Portuguese, Indonesian, Italian, Russian, Thai, Vietnamese, Turkish, Hindi, Malay, Dutch, Swedish, Danish, Finnish, Polish, Czech, Filipino, Persian, Greek, Hungarian, Macedonian, and Romanian, plus regional Chinese dialect support. Because vvrite uses that checkpoint directly through mlx-audio and does not force a fixed recognition language, multilingual dictation works well for the model's supported languages.
 
@@ -196,7 +196,7 @@ Configure a remote ASR server and the download step is satisfied without it.
 | Component | Technology |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR Model | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| ASR Model | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | Inference | [mlx-audio](https://github.com/ml-explore/mlx-audio) on Apple Silicon GPU |
 | Audio | sounddevice |
 | Packaging | PyInstaller |
@@ -206,4 +206,4 @@ Configure a remote ASR server and the download step is satisfied without it.
 MIT — see [LICENSE](LICENSE) for details. Original work © 2026 shpark
 ([shaircast/vvrite](https://github.com/shaircast/vvrite)).
 
-The ASR model [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) is licensed under Apache 2.0.
+The ASR model [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) is licensed under Apache 2.0.

@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -50,7 +50,7 @@ El modelo predeterminado también ofrece un sólido soporte multilingüe de reco
 
 ## Soporte de idiomas
 
-vvrite utiliza [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), que es una conversión MLX de [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B). Según la ficha oficial del modelo Qwen, Qwen3-ASR-1.7B soporta identificación de idioma y reconocimiento de voz para 30 idiomas y 22 dialectos chinos.
+vvrite utiliza [`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit), que es una conversión MLX de [`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B). Según la ficha oficial del modelo Qwen, Qwen3-ASR-1.7B soporta identificación de idioma y reconocimiento de voz para 30 idiomas y 22 dialectos chinos.
 
 Esto incluye coreano, inglés, japonés, chino, cantonés, árabe, alemán, francés, español, portugués, indonesio, italiano, ruso, tailandés, vietnamita, turco, hindi, malayo, neerlandés, sueco, danés, finlandés, polaco, checo, filipino, persa, griego, húngaro, macedonio y rumano, además de soporte para dialectos regionales chinos. Dado que vvrite usa ese punto de control directamente a través de mlx-audio y no fuerza un idioma de reconocimiento fijo, el dictado multilingüe funciona bien para los idiomas compatibles del modelo.
 
@@ -107,7 +107,7 @@ En el primer inicio, el asistente de configuración te guiará a través de:
 | Componente | Tecnología |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| Modelo ASR | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| Modelo ASR | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | Inferencia | [mlx-audio](https://github.com/ml-explore/mlx-audio) en GPU de Apple Silicon |
 | Audio | sounddevice |
 | Empaquetado | PyInstaller |

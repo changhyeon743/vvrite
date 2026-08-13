@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -41,12 +41,25 @@ M4 맥북, 실측입니다.
 | 단계 | 시간 |
 |---|---|
 | 마이크 스트림 열기 | 53ms |
-| 로컬 ASR (3.7초 발화) | 0.65초 |
-| 로컬 ASR (12초 발화) | 1.30초 |
+| 로컬 ASR (6초 발화) | 0.31초 |
+| 로컬 ASR (12초 발화) | 0.54초 |
 | 화면 OCR | 1.1~1.5초 (말하는 동안 병렬이라 **0초**) |
 | LLM 교정 | 0.6~1.3초 |
 
-교정을 켜면 **1.5~2초**, 끄면 **1초 미만**입니다.
+교정을 켜면 **1~1.7초**, 끄면 **0.5초 미만**입니다.
+
+### 왜 0.6B인가
+
+같은 계열 1.7B와 한국어로 비교했습니다.
+
+| | 6초 오디오 | 12초 오디오 | 문자 정확도 | 크기 |
+|---|---|---|---|---|
+| **0.6B** | 0.31초 | 0.54초 | 95.2% | 964MB |
+| 1.7B | 0.66초 | 1.12초 | 94.7% | 2.3GB |
+
+**두 배 빠르고 정확도는 대등합니다.** 1.7B가 앞서는 건 고유명사 하나뿐인데(`넥스트베이스 V3` vs `넥스트베이스 v 리도`) 둘 다 정확히는 못 맞히고, 그건 화면 문맥 교정이 덮는 부분입니다. 지원 언어는 30개로 동일합니다.
+
+1.7B로 돌리려면 `.env`에 `VVRITE_MODEL_ID=mlx-community/Qwen3-ASR-1.7B-8bit`를 넣으면 됩니다.
 
 ## 이 포크가 더한 것
 
@@ -130,7 +143,7 @@ VVRITE_LLM_MODEL=your-model-name
 VVRITE_LLM_CONTEXT=소프트웨어 개발자. 한국어와 영어만 사용한다.
 ```
 
-키는 `VVRITE_STT_ENDPOINT`, `VVRITE_LLM_ENDPOINT`, `VVRITE_LLM_MODEL`, `VVRITE_LLM_CONTEXT`, `VVRITE_CUSTOM_WORDS`입니다. 환경변수가 파일보다 우선합니다.
+키는 `VVRITE_MODEL_ID`, `VVRITE_STT_ENDPOINT`, `VVRITE_LLM_ENDPOINT`, `VVRITE_LLM_MODEL`, `VVRITE_LLM_CONTEXT`, `VVRITE_CUSTOM_WORDS`입니다. 환경변수가 파일보다 우선합니다.
 
 `.env`는 빌드할 때 **`.app` 안에 구워집니다.** 새로 설치해도 주소를 다시 입력할 필요가 없습니다. 값은 내용이 바뀔 때 한 번만 설정에 기록되므로, 그 사이 설정 창에서 바꾼 값은 유지됩니다.
 
@@ -149,7 +162,7 @@ open dist/vvrite.dmg
 
 ## 지원 언어
 
-[`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit)을 씁니다. Qwen 공식 모델 카드 기준 **30개 언어와 22개 중국어 방언**을 지원합니다.
+[`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit)을 씁니다. Qwen 공식 모델 카드 기준 **30개 언어와 22개 중국어 방언**을 지원합니다.
 
 한국어, 영어, 일본어, 중국어, 광둥어, 아랍어, 독일어, 프랑스어, 스페인어, 포르투갈어, 인도네시아어, 이탈리아어, 러시아어, 태국어, 베트남어, 튀르키예어, 힌디어, 말레이어, 네덜란드어, 스웨덴어, 덴마크어, 핀란드어, 폴란드어, 체코어, 필리핀어, 페르시아어, 그리스어, 헝가리어, 마케도니아어, 루마니아어가 포함됩니다.
 
@@ -158,7 +171,7 @@ open dist/vvrite.dmg
 ## 요구 사항
 
 - Apple Silicon · 빌드된 앱은 macOS 15+, 소스 실행은 macOS 13+
-- ASR 모델용 디스크 약 2GB
+- ASR 모델용 디스크 약 1GB
 - 마이크 권한
 - 손쉬운 사용 권한 (전역 단축키용)
 - 화면 기록 권한 (화면 문맥 기능을 켤 때만)
@@ -206,7 +219,7 @@ export SPARKLE_PUBLIC_ED_KEY="..."
 | 구성 요소 | 기술 |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR 모델 | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| ASR 모델 | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | 추론 | Apple Silicon GPU에서 [mlx-audio](https://github.com/ml-explore/mlx-audio) |
 | 화면 OCR | Vision.framework (`VNRecognizeTextRequest`) |
 | 오디오 | sounddevice |
@@ -216,4 +229,4 @@ export SPARKLE_PUBLIC_ED_KEY="..."
 
 MIT — [LICENSE](LICENSE) 참조. 원저작물 © 2026 shpark ([shaircast/vvrite](https://github.com/shaircast/vvrite)).
 
-ASR 모델 [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit)은 Apache 2.0 라이선스입니다.
+ASR 모델 [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit)은 Apache 2.0 라이선스입니다.

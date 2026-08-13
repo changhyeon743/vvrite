@@ -30,7 +30,13 @@ _DEFAULTS = {
     "retract_hotkey_keycode": 0x06,  # Z
     "retract_hotkey_modifiers": int(kCGEventFlagMaskAlternate | kCGEventFlagMaskShift),
     # mic_device intentionally omitted — None/absent means system default
-    "model_id": "mlx-community/Qwen3-ASR-1.7B-8bit",
+    # 0.6B, not 1.7B. Measured on Korean speech: 0.31s vs 0.66s for six seconds of
+    # audio, 964MB vs 2.3GB resident, and character accuracy came out level (95.2%
+    # vs 94.7% over three utterances). The larger model is only ahead on proper
+    # nouns — "넥스트베이스 V3" against "넥스트베이스 v 리도" — and neither gets
+    # those right on its own, which is what the screen-context correction is for.
+    # Both support the same 30 languages.
+    "model_id": "mlx-community/Qwen3-ASR-0.6B-8bit",
     # Empty means on-device transcription. Set to a Qwen3-ASR server base URL
     # (e.g. "http://asr.local:8100") to transcribe there instead — audio then
     # leaves this Mac, so it is opt-in and off by default.
@@ -65,7 +71,8 @@ _DEFAULTS = {
 # fork carries someone's LAN hostname around forever. These read from .env (which
 # is gitignored) or the environment, and only supply *defaults*: anything set in
 # the Settings window still wins.
-_ENV_KEYS = ("stt_endpoint", "llm_endpoint", "llm_model", "llm_context", "custom_words")
+_ENV_KEYS = ("model_id", "stt_endpoint", "llm_endpoint", "llm_model",
+             "llm_context", "custom_words")
 
 
 def _dotenv_path() -> Path:

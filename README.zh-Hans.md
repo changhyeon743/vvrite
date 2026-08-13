@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS_(Apple_Silicon)-blue" alt="macOS">
-  <img src="https://img.shields.io/badge/model-Qwen3--ASR--1.7B--8bit-green" alt="Model">
+  <img src="https://img.shields.io/badge/model-Qwen3--ASR--0.6B--8bit-green" alt="Model">
   <img src="https://img.shields.io/badge/runtime-MLX-orange" alt="MLX">
 </p>
 
@@ -50,7 +50,7 @@
 
 ## 语言支持
 
-vvrite 使用 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit)，这是 [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) 的 MLX 转换版本。根据 Qwen 官方模型卡片，Qwen3-ASR-1.7B 支持 30 种语言和 22 种中文方言的语言识别与语音识别。
+vvrite 使用 [`mlx-community/Qwen3-ASR-0.6B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit)，这是 [`Qwen/Qwen3-ASR-0.6B`](https://huggingface.co/Qwen/Qwen3-ASR-0.6B) 的 MLX 转换版本。根据 Qwen 官方模型卡片，Qwen3-ASR-1.7B 支持 30 种语言和 22 种中文方言的语言识别与语音识别。
 
 支持的语言包括韩语、英语、日语、中文、粤语、阿拉伯语、德语、法语、西班牙语、葡萄牙语、印度尼西亚语、意大利语、俄语、泰语、越南语、土耳其语、印地语、马来语、荷兰语、瑞典语、丹麦语、芬兰语、波兰语、捷克语、菲律宾语、波斯语、希腊语、匈牙利语、马其顿语和罗马尼亚语，同时还支持中文地方方言。vvrite 通过 mlx-audio 直接使用该模型检查点，不强制指定识别语言，因此模型支持的语言均可良好地进行多语言听写。
 
@@ -107,7 +107,7 @@ open dist/vvrite.dmg
 | 组件 | 技术 |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR 模型 | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) |
+| ASR 模型 | [Qwen3-ASR-0.6B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) |
 | 推理 | 在 Apple Silicon GPU 上运行 [mlx-audio](https://github.com/ml-explore/mlx-audio) |
 | 音频 | sounddevice |
 | 打包 | PyInstaller |
