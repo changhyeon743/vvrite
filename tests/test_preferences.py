@@ -1,5 +1,7 @@
 """Tests for preferences module."""
 import unittest
+from unittest.mock import patch
+
 from Foundation import NSUserDefaults
 
 from vvrite.preferences import APP_DEFAULTS_DOMAIN
@@ -31,7 +33,23 @@ _LEGACY_DOMAINS = ["com.vvrite.app", "python3", "python", "Python"]
 
 
 class TestPreferences(unittest.TestCase):
+    """A developer checkout may carry a .env, whose values are written through to
+    the saved settings on construction. These tests are about the defaults and the
+    legacy migration, so the overlay is switched off rather than left to depend on
+    whatever the machine happens to have configured."""
+
     def setUp(self):
+        import vvrite.preferences as prefs_mod
+
+        self._no_env = patch.object(prefs_mod, "_env_values", return_value={})
+        self._no_env.start()
+        self.addCleanup(self._no_env.stop)
+        # _DEFAULTS is overlaid at import time too, so clearing the write-through
+        # alone would still leave a .env value sitting in the registered defaults.
+        blank = {k: "" for k in prefs_mod._ENV_KEYS if k != "model_id"}
+        self._no_env_defaults = patch.dict(prefs_mod._DEFAULTS, blank)
+        self._no_env_defaults.start()
+        self.addCleanup(self._no_env_defaults.stop)
         defaults = NSUserDefaults.standardUserDefaults()
         for key in _TEST_KEYS:
             defaults.removeObjectForKey_(key)
