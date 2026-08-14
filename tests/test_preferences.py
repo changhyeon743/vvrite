@@ -239,7 +239,9 @@ class TestPreferences(unittest.TestCase):
     def test_default_auto_update_check(self):
         from vvrite.preferences import Preferences
         prefs = Preferences()
-        self.assertTrue(prefs.auto_update_check)
+        # Off in this fork: it is built locally and has no release feed, and the
+        # inherited upstream feed offered someone else's build as an update.
+        self.assertFalse(prefs.auto_update_check)
 
     def test_set_auto_update_check(self):
         from vvrite.preferences import Preferences

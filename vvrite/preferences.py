@@ -62,7 +62,9 @@ _DEFAULTS = {
     "stop_volume": 1.0,
     "onboarding_completed": False,
     "custom_words": "",
-    "auto_update_check": True,
+    # See SUEnableAutomaticChecks in vvrite.spec — a locally built fork has no
+    # release feed to check.
+    "auto_update_check": False,
     "asr_language": "auto",
 }
 

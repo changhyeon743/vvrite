@@ -11,9 +11,12 @@ from vvrite import APP_BUNDLE_IDENTIFIER, __version__
 
 block_cipher = None
 
+# This fork's own feed, not upstream's. Pointed at shaircast, Sparkle offered
+# upstream's 1.0.9 as an update to a build that shares only its version number —
+# accepting it would have replaced every change in this fork.
 SPARKLE_APPCAST_URL = os.environ.get(
     "SPARKLE_APPCAST_URL",
-    "https://github.com/shaircast/vvrite/releases/latest/download/appcast.xml",
+    "https://github.com/changhyeon743/vvrite/releases/latest/download/appcast.xml",
 )
 SPARKLE_PUBLIC_ED_KEY = os.environ.get("SPARKLE_PUBLIC_ED_KEY", "").strip()
 
@@ -46,7 +49,10 @@ info_plist = {
     "NSSupportsAutomaticTermination": False,
     "NSSupportsSuddenTermination": False,
     "SUFeedURL": SPARKLE_APPCAST_URL,
-    "SUEnableAutomaticChecks": True,
+    # Off by default: this fork is built locally, so there is nothing for Sparkle
+    # to find, and a background check that silently resolves to someone else's
+    # release is worse than no check at all.
+    "SUEnableAutomaticChecks": False,
     "SUScheduledCheckInterval": 86400,
 }
 
