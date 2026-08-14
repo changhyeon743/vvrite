@@ -26,6 +26,39 @@ if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$SIGN_IDE
     SIGN_IDENTITY="-"
 fi
 
+# ── Build environment ──────────────────────────────────────────
+# A dedicated venv, not whatever interpreter happens to be on PATH. Building from
+# a general-purpose environment bundles everything installed in it: one build
+# picked up polars, llvmlite and geopandas for 144MB of dead weight, and — worse —
+# an OpenSSL 1.1 that collided with the 3.x the interpreter expects, leaving the
+# app unable to import ssl at all. Set BUILD_VENV=0 to use the current interpreter.
+BUILD_VENV="${BUILD_VENV:-1}"
+VENV_DIR="${VENV_DIR:-$ROOT_DIR/.build-venv}"
+if [[ "$BUILD_VENV" != "0" ]]; then
+    if [[ ! -x "$VENV_DIR/bin/python" ]]; then
+        # mlx-audio needs 3.10+, so /usr/bin/python3 (3.9 on this macOS) is out.
+        # venv isolates the packages either way; the interpreter can be shared.
+        BASE_PYTHON=""
+        for candidate in python3.13 python3.12 python3.11 python3.10 python3; do
+            if command -v "$candidate" >/dev/null 2>&1 && \
+               "$candidate" -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)'; then
+                BASE_PYTHON="$candidate"; break
+            fi
+        done
+        if [[ -z "$BASE_PYTHON" ]]; then
+            echo "No Python 3.10+ found for the build venv. Install one, or set BUILD_VENV=0."
+            exit 1
+        fi
+        echo "▸ Creating build venv at $VENV_DIR (from $BASE_PYTHON) ..."
+        "$BASE_PYTHON" -m venv "$VENV_DIR"
+        "$VENV_DIR/bin/pip" install -q --upgrade pip
+    fi
+    echo "▸ Syncing build venv with requirements.txt ..."
+    "$VENV_DIR/bin/pip" install -q -r requirements.txt pyinstaller
+    export PATH="$VENV_DIR/bin:$PATH"
+    echo "  ✓ Building with $($VENV_DIR/bin/python -V) from $VENV_DIR"
+fi
+
 # Use the Sparkle key for the configured account
 if [[ -z "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
     echo "▸ Looking up SPARKLE_PUBLIC_ED_KEY for account '$SPARKLE_KEY_ACCOUNT'..."

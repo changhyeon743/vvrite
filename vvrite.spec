@@ -53,8 +53,14 @@ info_plist = {
 if SPARKLE_PUBLIC_ED_KEY:
     info_plist["SUPublicEDKey"] = SPARKLE_PUBLIC_ED_KEY
 
-site_packages = os.path.join(
-    os.path.dirname(os.__file__), "site-packages"
+# site.getsitepackages(), not os.__file__: inside a venv the latter points at the
+# base interpreter's stdlib, so the data files below would be looked up in the
+# wrong prefix and the build would fail on a clean build environment.
+import site
+
+site_packages = next(
+    (p for p in site.getsitepackages() if p.endswith("site-packages")),
+    os.path.join(os.path.dirname(os.__file__), "site-packages"),
 )
 
 # PyObjC bridge modules need all submodules collected

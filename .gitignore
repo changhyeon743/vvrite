@@ -13,3 +13,6 @@ CLAUDE.md
 
 # Personal server addresses / model names — see .env.example
 .env
+
+# Isolated build environment
+.build-venv/
