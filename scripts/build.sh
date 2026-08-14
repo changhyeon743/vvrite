@@ -25,7 +25,52 @@ export SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-nOeh/Q16IsXOKE7vczErR7PTe
 echo "▸ Checking build environment..."
 python - <<'PY'
 import importlib
+from importlib import metadata
+from pathlib import Path
 import sys
+
+from packaging.requirements import Requirement
+
+
+required_python = (3, 11)
+if sys.version_info[:2] != required_python:
+    raise SystemExit(
+        "Builds require Python 3.11; current interpreter is "
+        f"{sys.version_info.major}.{sys.version_info.minor}."
+    )
+
+requirements_path = Path("requirements.txt")
+dependency_errors = []
+
+for raw_line in requirements_path.read_text().splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#"):
+        continue
+
+    requirement = Requirement(line)
+    if requirement.marker and not requirement.marker.evaluate():
+        continue
+
+    try:
+        installed_version = metadata.version(requirement.name)
+    except metadata.PackageNotFoundError:
+        dependency_errors.append(f"{requirement.name}: missing")
+        continue
+
+    if installed_version not in requirement.specifier:
+        dependency_errors.append(
+            f"{requirement.name}: installed {installed_version}, "
+            f"required {requirement.specifier}"
+        )
+
+if dependency_errors:
+    details = "\n".join(f"  - {item}" for item in dependency_errors)
+    raise SystemExit(
+        "Build environment does not match requirements.txt:\n"
+        f"{details}\n"
+        "Create a clean environment with `uv venv .venv && "
+        "uv pip sync --python .venv/bin/python requirements.txt`, then retry."
+    )
 
 required_modules = {
     "ServiceManagement": "pyobjc-framework-ServiceManagement",
@@ -47,7 +92,10 @@ if missing:
     )
 
 print("  ✓ Required Python bridge modules available")
+print("  ✓ Locked dependency versions match")
 PY
+
+python -m pip check
 
 if [[ "$SPARKLE_ENABLED" != "0" ]]; then
     if [[ -z "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
@@ -75,9 +123,9 @@ fi
 # (MSL 4.0) won't load on macOS 15. Swap in the macOS 15 wheel's metallib
 # so the resulting .app runs on macOS 15+.
 MLX_COMPAT_DIR=$(mktemp -d)
-MLX_METAL_VER=$(pip show mlx-metal | awk '/^Version:/{print $2}')
+MLX_METAL_VER=$(python -m pip show mlx-metal | awk '/^Version:/{print $2}')
 echo "▸ Fetching macOS 15-compatible mlx-metal $MLX_METAL_VER..."
-pip download --no-deps -d "$MLX_COMPAT_DIR" \
+python -m pip download --no-deps -d "$MLX_COMPAT_DIR" \
     "mlx-metal==$MLX_METAL_VER" \
     --platform macosx_15_0_arm64 --only-binary :all: --quiet
 SITE=$(python -c "import site; print(site.getsitepackages()[0])")
@@ -87,7 +135,7 @@ echo "  ✓ Backward-compatible metallib installed (macOS 15+)"
 
 # ── Step 1: Build ──────────────────────────────────────────────
 echo "▸ Building with PyInstaller..."
-pyinstaller vvrite.spec --noconfirm
+python -m PyInstaller vvrite.spec --noconfirm
 echo "  ✓ Build complete"
 
 if [[ "$SPARKLE_ENABLED" != "0" ]]; then

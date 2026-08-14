@@ -1,12 +1,15 @@
 """PyInstaller spec for vvrite macOS app."""
 import os
 import sys
+from pathlib import Path
 
 ROOT_DIR = os.path.abspath(os.getcwd())
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from PyInstaller.utils.hooks import collect_submodules
+import mlx
+import soundfile
 from vvrite import APP_BUNDLE_IDENTIFIER, __version__
 
 block_cipher = None
@@ -34,7 +37,7 @@ if BAKE_ENV and os.path.exists(os.path.join(ROOT_DIR, ".env")):
 info_plist = {
     "CFBundleName": "vvrite",
     "CFBundleShortVersionString": __version__,  # sourced from vvrite/__init__.__version__
-    "CFBundleVersion": "9",  # monotonic build number; bump each release
+    "CFBundleVersion": "10",  # monotonic build number; bump each release
     "LSUIElement": True,
     "NSMicrophoneUsageDescription": (
         "vvrite needs microphone access to record and transcribe your speech."
@@ -59,15 +62,9 @@ info_plist = {
 if SPARKLE_PUBLIC_ED_KEY:
     info_plist["SUPublicEDKey"] = SPARKLE_PUBLIC_ED_KEY
 
-# site.getsitepackages(), not os.__file__: inside a venv the latter points at the
-# base interpreter's stdlib, so the data files below would be looked up in the
-# wrong prefix and the build would fail on a clean build environment.
-import site
-
-site_packages = next(
-    (p for p in site.getsitepackages() if p.endswith("site-packages")),
-    os.path.join(os.path.dirname(os.__file__), "site-packages"),
-)
+soundfile_data_dir = Path(soundfile.__file__).resolve().parent / "_soundfile_data"
+mlx_package_dir = Path(next(iter(mlx.__path__))).resolve()
+mlx_lib_dir = mlx_package_dir / "lib"
 
 # PyObjC bridge modules need all submodules collected
 pyobjc_hiddenimports = (
@@ -87,9 +84,9 @@ a = Analysis(
     binaries=[],
     datas=[
         # soundfile needs libsndfile
-        (os.path.join(site_packages, "_soundfile_data"), "_soundfile_data"),
+        (str(soundfile_data_dir), "_soundfile_data"),
         # MLX Metal shaders and native libs
-        (os.path.join(site_packages, "mlx", "lib"), os.path.join("mlx", "lib")),
+        (str(mlx_lib_dir), os.path.join("mlx", "lib")),
     ] + env_datas,
     hiddenimports=pyobjc_hiddenimports + [
         # Locale modules (dynamically imported by vvrite.locales)
@@ -105,7 +102,6 @@ a = Analysis(
         "mlx_lm",
         "mlx_audio",
         "mlx_audio.stt",
-        "mlx_audio.stt.models",
         "mlx_audio.stt.models.qwen3_asr",
         # WAV decode + 16k mono resample backend, lazy-imported by mlx_audio
         # at transcribe time (replaces the bundled ffmpeg normalization step)
@@ -113,6 +109,8 @@ a = Analysis(
         "miniaudio",
         # Transformers
         "transformers",
+        "transformers.models.qwen2.tokenization_qwen2",
+        "transformers.models.whisper.feature_extraction_whisper",
         "tokenizers",
         # Audio
         "sounddevice",
@@ -122,7 +120,7 @@ a = Analysis(
         "safetensors",
         "numpy",
     ],
-    hookspath=[],
+    hookspath=[os.path.join(ROOT_DIR, "pyinstaller_hooks")],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
@@ -132,6 +130,36 @@ a = Analysis(
         "torch",
         "torchaudio",
         "torchvision",
+        "accelerate",
+        "bitsandbytes",
+        "datasets",
+        "fastapi",
+        "librosa",
+        "llvmlite",
+        "mistral_common",
+        "mlx_audio.lid",
+        "mlx_audio.server",
+        "mlx_audio.sts",
+        "mlx_audio.tts",
+        "mlx_audio.vad",
+        "mlx_audio.stt.models.glmasr",
+        "mlx_audio.stt.models.lasr_ctc",
+        "mlx_audio.stt.models.parakeet",
+        "mlx_audio.stt.models.vibevoice_asr",
+        "mlx_audio.stt.models.voxtral",
+        "mlx_audio.stt.models.voxtral_realtime",
+        "mlx_audio.stt.models.wav2vec",
+        "mlx_audio.stt.models.whisper",
+        "numba",
+        "openai",
+        "pyloudnorm",
+        "sentencepiece",
+        "sklearn",
+        "scipy",
+        "soxr",
+        "tiktoken",
+        "timm",
+        "uvicorn",
         "pyarrow",
         "cv2",
         "opencv-python",
