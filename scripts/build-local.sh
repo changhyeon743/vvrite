@@ -212,6 +212,52 @@ rm -rf "$DMG_STAGE"
 
 echo "  ✓ DMG ready: $DMG"
 
+# ── Step 5: Install from the DMG (opt-in) ───────────────────
+# INSTALL=1 mounts the DMG that was just built and copies from it, which is the
+# same thing dragging the icon does — the DMG stays the artifact. This is not a
+# path that skips it; building straight into /Applications was tried once and
+# rejected, and the permission resets that motivated it were a signing problem,
+# fixed by SIGN_IDENTITY above.
+if [[ "${INSTALL:-0}" == "1" ]]; then
+    echo "▸ Installing from $DMG ..."
+    WAS_RUNNING=0
+    if pgrep -f "/Applications/vvrite.app/Contents/MacOS/vvrite" >/dev/null 2>&1; then
+        WAS_RUNNING=1
+        echo "  Quitting the running vvrite..."
+        osascript -e 'quit app "vvrite"' 2>/dev/null || true
+        for _ in $(seq 1 20); do
+            pgrep -f "/Applications/vvrite.app/Contents/MacOS/vvrite" >/dev/null 2>&1 || break
+            sleep 0.5
+        done
+        pkill -f "/Applications/vvrite.app/Contents/MacOS/vvrite" 2>/dev/null || true
+    fi
+
+    # An earlier copy of this image may still be attached — from a manual open, or
+    # from an interrupted run. Attaching the same image twice fails, so release it.
+    hdiutil detach /Volumes/vvrite -quiet 2>/dev/null || true
+
+    MOUNT_POINT=$(mktemp -d)
+    hdiutil attach "$DMG" -nobrowse -quiet -mountpoint "$MOUNT_POINT"
+    # Trap so a failed copy still releases the disk image.
+    trap 'hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true; rmdir "$MOUNT_POINT" 2>/dev/null || true' EXIT
+    rm -rf /Applications/vvrite.app
+    cp -R "$MOUNT_POINT/vvrite.app" /Applications/
+    hdiutil detach "$MOUNT_POINT" -quiet
+    rmdir "$MOUNT_POINT" 2>/dev/null || true
+    trap - EXIT
+    echo "  ✓ Installed to /Applications/vvrite.app"
+
+    if [[ "$WAS_RUNNING" == "1" ]]; then
+        open -a /Applications/vvrite.app
+        echo "  ✓ Relaunched (it was running before)"
+    fi
+fi
+
 echo ""
 echo "✓ Done! $DMG is ready for local testing."
-echo "  Open it with: open $DMG"
+if [[ "${INSTALL:-0}" == "1" ]]; then
+    echo "  Installed to /Applications."
+else
+    echo "  Open it with: open $DMG"
+    echo "  Or install in one step: INSTALL=1 ./scripts/build-local.sh"
+fi
