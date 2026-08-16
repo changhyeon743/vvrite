@@ -115,6 +115,13 @@ a = Analysis(
         # Audio
         "sounddevice",
         "soundfile",
+        # Remote ASR and the LLM corrector reach the network through requests, but
+        # both import it inside a function so the module is only touched when those
+        # features are on. The transformers hook copies its metadata, which made the
+        # bundle look like it had requests while the code was missing: every remote
+        # dictation logged "No module named 'requests'" and quietly fell back to the
+        # on-device model.
+        "requests",
         # Other
         "huggingface_hub",
         "safetensors",

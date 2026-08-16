@@ -49,3 +49,19 @@ class TestQwenOnlyModelNamespace(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNetworkDependency(unittest.TestCase):
+    """requests is imported inside functions, so nothing static pulls it into the
+    bundle. It went missing once and every remote dictation fell back silently."""
+
+    def test_requests_is_importable(self):
+        import importlib
+
+        self.assertIsNotNone(importlib.import_module("requests"))
+
+    def test_spec_lists_requests_as_a_hidden_import(self):
+        import pathlib
+
+        spec = pathlib.Path(__file__).resolve().parent.parent / "vvrite.spec"
+        self.assertIn('"requests"', spec.read_text())
