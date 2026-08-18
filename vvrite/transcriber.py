@@ -142,7 +142,7 @@ def _is_korean(text: str) -> bool:
 
 
 def _correction_prompt(text: str, vocab: str, context: str = "",
-                       screen_terms: list = None) -> str:
+                       screen_terms: list = None, pronunciations: str = "") -> str:
     """Rules for the post-ASR corrector.
 
     Every line replaced a failure seen in practice, so trim with care:
@@ -171,6 +171,15 @@ def _correction_prompt(text: str, vocab: str, context: str = "",
     )
     if vocab:
         rules.append(f"- 다음 표기는 그대로 둔다: {vocab}")
+    if pronunciations:
+        # The spellings above are enough when the recogniser keeps the syllables
+        # apart — "씨에스" and "디비" already came back as CS and DB. They are not
+        # enough when it runs them together: "피 알" arrives as "피아", a perfectly
+        # ordinary Korean word, and the corrector has no reason to touch it.
+        # Naming the pronunciation gives it the one thing it was missing.
+        rules.append(
+            f"- 자주 쓰는 약어의 한국어 발음이다. 이렇게 들렸으면 해당 표기로 바꾼다: {pronunciations}"
+        )
     rules += [
         "- 지울 수 있는 것은 감탄사(음, 어, 아)와 같은 말의 반복뿐이다. "
         "그 외에는 입력의 모든 단어가 출력에 그대로 있어야 한다.",
@@ -230,7 +239,8 @@ def _correct(text: str, prefs) -> str:
                      "content": _correction_prompt(text,
                                                    prefs.custom_words.strip(),
                                                    prefs.llm_context.strip(),
-                                                   screen_terms)},
+                                                   screen_terms,
+                                                   prefs.pronunciations.strip())},
                     {"role": "user", "content": text},
                 ],
             },

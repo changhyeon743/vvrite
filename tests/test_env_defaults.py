@@ -53,5 +53,45 @@ class TestBakedEnvStamp(unittest.TestCase):
         self.assertEqual(len(runs), 1, "stamp must not depend on PYTHONHASHSEED")
 
 
+class TestBakedValuesSurvive(unittest.TestCase):
+    """The stamp exists so a bake applies once. It must not also mean "never again"
+    — saved values can go missing while the stamp survives, and a build then
+    launches with no endpoint at all."""
+
+    def test_missing_value_is_restored_even_when_the_stamp_matches(self):
+        from unittest.mock import MagicMock
+
+        import vvrite.preferences as prefs_mod
+
+        defaults = MagicMock()
+        values = {"stt_endpoint": "http://asr.local", "llm_model": "m"}
+        stamp = __import__("hashlib").sha1(
+            repr(sorted(values.items())).encode("utf-8")
+        ).hexdigest()
+        defaults.stringForKey_.return_value = stamp
+        # stt_endpoint has gone missing; llm_model is still there.
+        defaults.objectForKey_.side_effect = lambda k: None if k == "stt_endpoint" else "m"
+
+        p = prefs_mod.Preferences.__new__(prefs_mod.Preferences)
+        p._defaults = defaults
+        with patch.object(prefs_mod, "_env_values", return_value=values):
+            p._apply_baked_env_if_changed()
+
+        written = {c.args[1] for c in defaults.setObject_forKey_.call_args_list}
+        self.assertIn("stt_endpoint", written)
+        # The one that is still present is left alone — it may be a Settings edit.
+        self.assertNotIn("llm_model", written)
+
+
+class TestBooleanEnvKeys(unittest.TestCase):
+    def test_zero_is_false_not_a_truthy_string(self):
+        import vvrite.preferences as prefs_mod
+
+        with patch.dict("os.environ", {"VVRITE_STT_CORRECTION": "0"}):
+            self.assertIs(prefs_mod._env_values(NO_DOTENV)["stt_correction"], False)
+        with patch.dict("os.environ", {"VVRITE_STT_CORRECTION": "1"}):
+            self.assertIs(prefs_mod._env_values(NO_DOTENV)["stt_correction"], True)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -62,6 +62,9 @@ _DEFAULTS = {
     "stop_volume": 1.0,
     "onboarding_completed": False,
     "custom_words": "",
+    # "표기" -> the corrector already knows; "발음 -> 표기" is what it cannot infer
+    # when the recogniser merges syllables. Comma-separated "발음→표기" pairs.
+    "pronunciations": "피알/피아→PR, 씨에스→CS, 디비→DB",
     # See SUEnableAutomaticChecks in vvrite.spec — a locally built fork has no
     # release feed to check.
     "auto_update_check": False,
@@ -74,7 +77,11 @@ _DEFAULTS = {
 # is gitignored) or the environment, and only supply *defaults*: anything set in
 # the Settings window still wins.
 _ENV_KEYS = ("model_id", "stt_endpoint", "llm_endpoint", "llm_model",
-             "llm_context", "custom_words")
+             "llm_context", "custom_words", "pronunciations")
+# Same treatment, but written as booleans. Without these two the correction and
+# the screen context reset to off on every reinstall, which reads as the custom
+# word list having stopped working — it is only ever consulted by the corrector.
+_ENV_BOOL_KEYS = ("stt_correction", "screen_context")
 
 
 def _dotenv_path() -> Path:
@@ -104,9 +111,15 @@ def _env_values(dotenv: Path = _DOTENV) -> dict:
         pass  # no .env in a packaged build, or unreadable — the environment still applies
     env.update(os.environ)
 
-    return {key: env[f"VVRITE_{key.upper()}"]
-            for key in _ENV_KEYS
-            if env.get(f"VVRITE_{key.upper()}")}
+    values = {key: env[f"VVRITE_{key.upper()}"]
+              for key in _ENV_KEYS
+              if env.get(f"VVRITE_{key.upper()}")}
+    for key in _ENV_BOOL_KEYS:
+        raw = env.get(f"VVRITE_{key.upper()}")
+        if raw:
+            # bool("0") is True, so the string has to be read rather than cast.
+            values[key] = raw.strip().lower() in ("1", "true", "yes", "on")
+    return values
 
 
 def _apply_env_defaults(defaults: dict, dotenv: Path = _DOTENV):
@@ -154,9 +167,18 @@ class Preferences:
         stamp = hashlib.sha1(
             repr(sorted(values.items())).encode("utf-8")
         ).hexdigest()
-        if self._defaults.stringForKey_(_ENV_STAMP_KEY) == stamp:
+        # A matching stamp is not enough to skip: the saved values can go missing
+        # while the stamp survives, and then nothing ever restores them. That is
+        # how a build once launched with no endpoint, fell through to onboarding,
+        # and left the correction and screen context switched off for two days.
+        missing = [k for k in values if self._defaults.objectForKey_(k) is None]
+        if self._defaults.stringForKey_(_ENV_STAMP_KEY) == stamp and not missing:
             return
         for key, value in values.items():
+            # Only fill the gaps once the stamp matches — an edit made in Settings
+            # after the bake is the user's, and outlives it.
+            if missing and key not in missing:
+                continue
             self._defaults.setObject_forKey_(value, key)
         self._defaults.setObject_forKey_(stamp, _ENV_STAMP_KEY)
         self._defaults.synchronize()
@@ -401,6 +423,14 @@ class Preferences:
     @stop_volume.setter
     def stop_volume(self, value: float):
         self._set("stop_volume", value)
+
+    @property
+    def pronunciations(self) -> str:
+        return str(self._get("pronunciations") or "")
+
+    @pronunciations.setter
+    def pronunciations(self, value: str):
+        self._set("pronunciations", value)
 
     @property
     def custom_words(self) -> str:
