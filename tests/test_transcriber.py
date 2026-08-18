@@ -358,3 +358,33 @@ class TestOnboardingGate(unittest.TestCase):
                 self.assertTrue(transcriber.is_model_cached("any/model"))
         finally:
             transcriber._model = old
+
+
+class TestPasteTiming(unittest.TestCase):
+    """The overlay used to stay up for the clipboard restore delay, which nothing
+    the user sees depends on — every dictation looked 200ms longer than it was."""
+
+    def test_on_pasted_fires_before_the_restore_delay(self):
+        import vvrite.clipboard as clipboard
+
+        order = []
+        with patch.object(clipboard, "backup", return_value=[]), \
+                patch.object(clipboard, "_set_text"), \
+                patch.object(clipboard, "_simulate_cmd_v"), \
+                patch.object(clipboard, "restore", side_effect=lambda s: order.append("restore")), \
+                patch.object(clipboard.time, "sleep", side_effect=lambda s: order.append("sleep")):
+            clipboard.paste_and_restore("x", on_pasted=lambda: order.append("dismiss"))
+
+        # Only the restore ordering is the guarantee — _wait_for_write may sleep
+        # in its poll loop, so "sleep" appearing earlier says nothing.
+        self.assertLess(order.index("dismiss"), order.index("restore"))
+
+    def test_wait_for_write_returns_as_soon_as_the_write_lands(self):
+        """It replaced a flat 50ms sleep; a fresh wait must not reintroduce one."""
+        import vvrite.clipboard as clipboard
+
+        board = MagicMock()
+        board.changeCount.side_effect = [1, 2, 2, 2]
+        started = __import__("time").monotonic()
+        clipboard._wait_for_write(board, previous_count=0, timeout=0.5)
+        self.assertLess(__import__("time").monotonic() - started, 0.1)

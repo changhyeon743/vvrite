@@ -1,6 +1,7 @@
 """Qwen3 ASR transcription using mlx-audio, or a remote Qwen3-ASR server."""
 
 import os
+import time
 
 import miniaudio
 import numpy as np
@@ -208,8 +209,6 @@ def _correct(text: str, prefs) -> str:
     if "://" not in endpoint:
         endpoint = f"http://{endpoint}"
 
-    import time
-
     import requests
 
     from vvrite import screen
@@ -270,6 +269,7 @@ def _transcribe_remote(raw_wav_path, prefs, endpoint, language_map) -> str:
         else:
             data["language"] = language
 
+    started = time.time()
     with open(raw_wav_path, "rb") as f:
         resp = requests.post(
             f"{endpoint}/v1/audio/transcriptions",
@@ -279,11 +279,16 @@ def _transcribe_remote(raw_wav_path, prefs, endpoint, language_map) -> str:
         )
     resp.raise_for_status()
 
+    text = resp.json()["text"].strip()
+    # ASR was the one stage with no timing of its own, so every discussion of where
+    # a dictation spends its time had to guess at the largest single piece.
+    log.info(f"asr    {time.time() - started:.2f}s  remote  {len(text)} chars")
+
     try:
         os.unlink(raw_wav_path)
     except OSError:
         pass
-    return resp.json()["text"].strip()
+    return text
 
 
 def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
@@ -335,9 +340,11 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
             else:
                 kwargs["language"] = language_param
 
+        started = time.time()
         audio = _decode_audio(raw_wav_path)
         result = _model.generate(audio, **kwargs)
         text = result.text.strip()
+        log.info(f"asr    {time.time() - started:.2f}s  local   {len(text)} chars")
         return _correct(text, prefs) if prefs.stt_correction else text
     finally:
         try:

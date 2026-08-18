@@ -324,11 +324,15 @@ class AppDelegate(NSObject):
         try:
             text = transcriber.transcribe(raw_path, self._prefs)
             if text:
-                paste_and_restore(text)
-                self._last_dictation_text = text
-                self.performSelectorOnMainThread_withObject_waitUntilDone_(
-                    "transcriptionComplete:", text, False
-                )
+                # Dismiss as soon as the paste is sent. The 200ms that follows is
+                # the clipboard restore settling, which the user has no stake in.
+                def dismiss():
+                    self._last_dictation_text = text
+                    self.performSelectorOnMainThread_withObject_waitUntilDone_(
+                        "transcriptionComplete:", text, False
+                    )
+
+                paste_and_restore(text, on_pasted=dismiss)
             else:
                 self.performSelectorOnMainThread_withObject_waitUntilDone_(
                     "transcriptionComplete:", None, False
