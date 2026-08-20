@@ -388,3 +388,31 @@ class TestPasteTiming(unittest.TestCase):
         started = __import__("time").monotonic()
         clipboard._wait_for_write(board, previous_count=0, timeout=0.5)
         self.assertLess(__import__("time").monotonic() - started, 0.1)
+
+
+class TestThinkingDisabled(unittest.TestCase):
+    """Reasoning has to be off for both model families. Qwen3 ignores the key
+    DeepSeek reads, and the resulting 24s calls blew past the read timeout — every
+    correction fell back to the raw text without an error to show for it."""
+
+    @patch("vvrite.transcriber.os.unlink")
+    def test_both_thinking_keys_are_sent(self, mock_unlink):
+        from vvrite.transcriber import transcribe
+
+        asr = MagicMock()
+        asr.json.return_value = {"text": "원문"}
+        llm = MagicMock()
+        llm.json.return_value = {"choices": [{"message": {"content": "교정"}}]}
+        requests = MagicMock()
+        requests.post.side_effect = [asr, llm]
+
+        prefs = TestRemoteEndpoint._prefs(
+            self, stt_correction=True,
+            llm_endpoint="http://llm.local:8000/v1/chat/completions")
+        with patch.dict("sys.modules", {"requests": requests}), \
+                patch("builtins.open", unittest.mock.mock_open(read_data=b"RIFF")):
+            transcribe("/tmp/rec.wav", prefs)
+
+        sent = requests.post.call_args_list[1][1]["json"]["chat_template_kwargs"]
+        self.assertIs(sent["thinking"], False)
+        self.assertIs(sent["enable_thinking"], False)

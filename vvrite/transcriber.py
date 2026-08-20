@@ -232,8 +232,13 @@ def _correct(text: str, prefs) -> str:
                 "model": prefs.llm_model,
                 "temperature": 0,
                 "max_tokens": 1024,
-                # DeepSeek reasons by default: 15s and sometimes an empty completion.
-                "chat_template_kwargs": {"thinking": False},
+                # Both keys, because the one that works depends on the model and
+                # the wrong one is ignored rather than rejected. DeepSeek reads
+                # "thinking"; Qwen3 reads "enable_thinking" and ignored the other,
+                # which cost 24s a call and returned an empty completion half the
+                # time — past the 12s read timeout, so every correction silently
+                # fell back to the raw text.
+                "chat_template_kwargs": {"thinking": False, "enable_thinking": False},
                 "messages": [
                     {"role": "system",
                      "content": _correction_prompt(text,
